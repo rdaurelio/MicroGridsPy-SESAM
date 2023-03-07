@@ -37,6 +37,20 @@ for i in range(len(Data_import)):
         n_generators = int((re.findall('\d+',Data_import[i])[0]))
     if "param: RE_Supply_Calculation" in Data_import[i]:      
         RE_Supply_Calculation = int((re.findall('\d+',Data_import[i])[0]))
+    if "param: WACC_Calculation" in Data_import[i]:
+        WACC_Calculation = int((re.findall('\d+',Data_import[i])[0]))
+    if "param: cost_of_equity" in Data_import[i]:
+        cost_of_equity = float((re.findall('\d+\.\d+',Data_import[i])[0])) 
+    if "param: cost_of_debt" in Data_import[i]:
+        cost_of_debt = float(re.findall('\d+\.\d+',Data_import[i])[0])
+    if "param: tax" in Data_import[i]:
+        tax = float((re.findall('\d+\.\d+',Data_import[i])[0])) 
+    if "param: debt_share" in Data_import[i]:
+        debt_share = float((re.findall('\d+\.\d+',Data_import[i])[0]))
+    if "param: equity_share" in Data_import[i]:
+        equity_share = float((re.findall('\d+\.\d+',Data_import[i])[0]))
+    if "param: Discount_Rate" in Data_import[i]:
+        Discount_Rate = float((re.findall('\d+\.\d+',Data_import[i])[0]))           
     if "param: Demand_Profile_Generation" in Data_import[i]:      
         Demand_Profile_Generation = int((re.findall('\d+',Data_import[i])[0]))
     if "param: Grid_Average_Number_Outages " in Data_import[i]:      
@@ -99,6 +113,19 @@ def Initialize_YearUpgrade_Tuples(model):
                     yu_tuples_list[y-1] = (y, len(model.steps))   
     print('\nTime horizon (year,investment-step): ' + str(yu_tuples_list))
     return yu_tuples_list
+
+#%% This section computes the Weighted Average Cost of Capital (WACC) from the financial input parameters received
+
+def Initialize_Discount_Rate(model):
+    if WACC_Calculation:
+        if equity_share == 0:
+            WACC = cost_of_debt*(1-tax)
+        else:
+           L = debt_share/equity_share 
+           WACC = cost_of_debt*(1-tax)*L/(1+L) + cost_of_equity*1/(1+L)
+    else:
+        WACC = Discount_Rate
+    return WACC
 
 
 #%% This section imports the multi-year Demand and Renewable-Energy output and creates a Multi-indexed DataFrame for it

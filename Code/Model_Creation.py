@@ -32,6 +32,14 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
     model.Delta_Time      = Param(within=NonNegativeReals)                          # Time step in hours
     model.StartDate       = Param()                                                 # Start date of the analisis
     model.Scenarios       = Param(within=NonNegativeReals) 
+    model.WACC_Calculation = Param(within=NonNegativeReals) 
+    model.cost_of_equity  = Param(within=NonNegativeReals) 
+    model.cost_of_debt    = Param(within=NonNegativeReals) 
+    model.tax             = Param(within=NonNegativeReals) 
+    model.equity_share    = Param(within=NonNegativeReals)
+    model.debt_share      = Param(within=NonNegativeReals) 
+    model.WACC   = Param(within=NonNegativeReals,
+                                  initialize = Initialize_Discount_Rate)
     model.Discount_Rate   = Param(within=NonNegativeReals)                          # Discount rate of the project in %
     model.Investment_Cost_Limit = Param(within=NonNegativeReals)
     model.Steps_Number = Param(initialize = Initialize_Upgrades_Number)

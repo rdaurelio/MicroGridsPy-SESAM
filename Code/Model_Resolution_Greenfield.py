@@ -176,7 +176,7 @@ def Model_Resolution_Greenfield(model, Optimization_Goal, MultiObjective_Optimiz
             model.ObjectiveFuntion = Objective(rule = Total_Variable_Cost_Obj, 
                                                sense = minimize)
         instance = model.create_instance(datapath) # load parameters
-    
+   
         print('\nInstance created')
     
         opt = SolverFactory('gurobi') # Solver use during the optimization

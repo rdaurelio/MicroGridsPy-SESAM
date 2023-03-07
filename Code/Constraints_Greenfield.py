@@ -70,13 +70,13 @@ def Investment_Cost(model):
         tup_list[i] = yu_tuples_list[model.Step_Duration*i + model.Step_Duration]      
   
     Inv_Ren = sum((model.RES_Units[1,r]*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r])
-                    + sum((((model.RES_Units[ut,r] - model.RES_Units[ut-1,r])*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r]))/((1+model.Discount_Rate)**(yt-1))
+                    + sum((((model.RES_Units[ut,r] - model.RES_Units[ut-1,r])*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r]))/((1+model.WACC)**(yt-1))
                     for (yt,ut) in tup_list) for r in model.renewable_sources)  
     Inv_Gen = sum((model.Generator_Nominal_Capacity[1,g]*model.Generator_Specific_Investment_Cost[g])
-                    + sum((((model.Generator_Nominal_Capacity[ut,g] - model.Generator_Nominal_Capacity[ut-1,g])*model.Generator_Specific_Investment_Cost[g]))/((1+model.Discount_Rate)**(yt-1))
+                    + sum((((model.Generator_Nominal_Capacity[ut,g] - model.Generator_Nominal_Capacity[ut-1,g])*model.Generator_Specific_Investment_Cost[g]))/((1+model.WACC)**(yt-1))
                     for (yt,ut) in tup_list) for g in model.generator_types)  
     Inv_Bat = ((model.Battery_Nominal_Capacity[1]*model.Battery_Specific_Investment_Cost)
-                    + sum((((model.Battery_Nominal_Capacity[ut] - model.Battery_Nominal_Capacity[ut-1])*model.Battery_Specific_Investment_Cost))/((1+model.Discount_Rate)**(yt-1))
+                    + sum((((model.Battery_Nominal_Capacity[ut] - model.Battery_Nominal_Capacity[ut-1])*model.Battery_Specific_Investment_Cost))/((1+model.WACC)**(yt-1))
                     for (yt,ut) in tup_list)) 
     
     return model.Investment_Cost == Inv_Ren + Inv_Gen + Inv_Bat    
@@ -88,11 +88,11 @@ def Investment_Cost_Limit(model):
 "Fixed O&M costs"
 def Operation_Maintenance_Cost_Act(model):
     OyM_Ren = sum(sum((model.RES_Units[ut,r]*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r]*model.RES_Specific_OM_Cost[r])/((
-                    1+model.Discount_Rate)**yt)for (yt,ut) in model.years_steps)for r in model.renewable_sources)    
+                    1+model.WACC)**yt)for (yt,ut) in model.years_steps)for r in model.renewable_sources)    
     OyM_Gen = sum(sum((model.Generator_Nominal_Capacity[ut,g]*model.Generator_Specific_Investment_Cost[g]*model.Generator_Specific_OM_Cost[g])/((
-                    1+model.Discount_Rate)**yt)for (yt,ut) in model.years_steps)for g in model.generator_types)
+                    1+model.WACC)**yt)for (yt,ut) in model.years_steps)for g in model.generator_types)
     OyM_Bat = sum((model.Battery_Nominal_Capacity[ut]*model.Battery_Specific_Investment_Cost*model.Battery_Specific_OM_Cost)/((
-                    1+model.Discount_Rate)**yt)for (yt,ut) in model.years_steps)
+                    1+model.WACC)**yt)for (yt,ut) in model.years_steps)
     return model.Operation_Maintenance_Cost_Act == OyM_Ren + OyM_Gen + OyM_Bat 
 
 
@@ -130,7 +130,7 @@ def Scenario_Lost_Load_Cost_Act(model,s):
     Cost_Lost_Load = 0         
     for y in range(1, model.Years +1):
         Num = sum(model.Lost_Load[s,y,t]*model.Lost_Load_Specific_Cost for t in model.periods)
-        Cost_Lost_Load += Num/((1+model.Discount_Rate)**y)
+        Cost_Lost_Load += Num/((1+model.WACC)**y)
     return  model.Scenario_Lost_Load_Cost_Act[s] == Cost_Lost_Load
 
 def Scenario_Lost_Load_Cost_NonAct(model,s):
@@ -144,7 +144,7 @@ def Total_Fuel_Cost_Act(model,s,g):
     Fuel_Cost_Tot = 0
     for y in range(1, model.Years +1):
         Num = sum(model.Generator_Energy_Production[s,y,g,t]*model.Generator_Marginal_Cost[s,y,g] for t in model.periods)
-        Fuel_Cost_Tot += Num/((1+model.Discount_Rate)**y)
+        Fuel_Cost_Tot += Num/((1+model.WACC)**y)
     return model.Total_Fuel_Cost_Act[s,g] == Fuel_Cost_Tot
    
 def Total_Fuel_Cost_NonAct(model,s,g):
@@ -158,7 +158,7 @@ def Total_Electricity_Cost_Act(model,s):
     Electricity_Cost_Tot = 0
     for y in range(1, model.Years +1):
         Num = sum(model.Energy_From_Grid[s,y,t]*model.Grid_Availability[s,y,t]*model.Grid_Purchased_El_Price/1000  for t in model.periods)
-        Electricity_Cost_Tot += Num/((1+model.Discount_Rate)**y)
+        Electricity_Cost_Tot += Num/((1+model.WACC)**y)
     return model.Total_Electricity_Cost_Act[s] == Electricity_Cost_Tot
    
 def Total_Electricity_Cost_NonAct(model,s): 
@@ -179,7 +179,7 @@ def Total_Revenues_Act(model,s):
     Revenues_Yearly = [0 for y in model.years]
     for y in range(1,model.Years+1):
         Revenues_Yearly [y-1] = sum(model.Energy_To_Grid[s,y,t]*model.Grid_Availability[s,y,t] * model.Grid_Sold_El_Price/1000 for t in model.periods)
-    return model.Total_Revenues_Act [s] == sum(Revenues_Yearly[y-1]/((1+model.Discount_Rate)**y)  for y in model.years)
+    return model.Total_Revenues_Act [s] == sum(Revenues_Yearly[y-1]/((1+model.WACC)**y)  for y in model.years)
 
 def Battery_Replacement_Cost_Act(model,s):
     Battery_cost_in = [0 for y in model.years]
@@ -189,7 +189,7 @@ def Battery_Replacement_Cost_Act(model,s):
         Battery_cost_in[y-1] = sum(model.Battery_Inflow[s,y,t]*model.Unitary_Battery_Replacement_Cost for t in model.periods)
         Battery_cost_out[y-1] = sum(model.Battery_Outflow[s,y,t]*model.Unitary_Battery_Replacement_Cost for t in model.periods)
         Battery_Yearly_cost[y-1] = Battery_cost_out[y-1] + Battery_cost_in[y-1]
-    return model.Battery_Replacement_Cost_Act[s] == sum(Battery_Yearly_cost[y-1]/((1+model.Discount_Rate)**y) for y in model.years) 
+    return model.Battery_Replacement_Cost_Act[s] == sum(Battery_Yearly_cost[y-1]/((1+model.WACC)**y) for y in model.years) 
     
 def Battery_Replacement_Cost_NonAct(model,s):
     Battery_cost_in = [0 for y in model.years]
@@ -221,27 +221,27 @@ def Salvage_Value(model):
 
     if model.Steps_Number == 1:    
         SV_Ren_1 = sum(model.RES_Units[1,r]*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r] * (model.RES_Lifetime[r]-model.Years)/model.RES_Lifetime[r] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for r in model.renewable_sources)        
+                        ((1 + model.WACC)**(model.Years)) for r in model.renewable_sources)        
         SV_Ren_2 = 0 
         SV_Ren_3 = 0    
         SV_Gen_1 = sum(model.Generator_Nominal_Capacity[1,g]*model.Generator_Specific_Investment_Cost[g] * (model.Generator_Lifetime[g]-model.Years)/model.Generator_Lifetime[g] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for g in model.generator_types)        
+                        ((1 + model.WACC)**(model.Years)) for g in model.generator_types)        
         SV_Gen_2 = 0
         SV_Gen_3 = 0
-        SV_Grid = model.Grid_Distance*model.Grid_Connection_Cost*model.Grid_Connection / ((1 + model.Discount_Rate)**(model.Years)) 
+        SV_Grid = model.Grid_Distance*model.Grid_Connection_Cost*model.Grid_Connection / ((1 + model.WACC)**(model.Years)) 
     if model.Steps_Number == 2:    
         yt_last_up = upgrade_years_list[1]       
         SV_Ren_1 = sum(model.RES_Units[1,r]*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r] * (model.RES_Lifetime[r]-model.Years)/model.RES_Lifetime[r] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for r in model.renewable_sources)        
+                        ((1 + model.WACC)**(model.Years)) for r in model.renewable_sources)        
         SV_Ren_2 = sum((model.RES_Units[2,r]-model.RES_Units[1,r])*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r] * (model.RES_Lifetime[r]+(yt_last_up-1)-model.Years)/model.RES_Lifetime[r] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for r in model.renewable_sources)        
+                        ((1 + model.WACC)**(model.Years)) for r in model.renewable_sources)        
         SV_Ren_3 = 0    
         SV_Gen_1 = sum(model.Generator_Nominal_Capacity[1,g]*model.Generator_Specific_Investment_Cost[g] * (model.Generator_Lifetime[g]-model.Years)/model.Generator_Lifetime[g] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for g in model.generator_types)        
+                        ((1 + model.WACC)**(model.Years)) for g in model.generator_types)        
         SV_Gen_2 = sum((model.Generator_Nominal_Capacity[2,g]-model.Generator_Nominal_Capacity[1,g])*model.Generator_Specific_Investment_Cost[g] * (model.Generator_Lifetime[g]+(yt_last_up-1)-model.Years)/model.Generator_Lifetime[g] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for g in model.generator_types)
+                        ((1 + model.WACC)**(model.Years)) for g in model.generator_types)
         SV_Gen_3 = 0
-        SV_Grid = model.Grid_Distance*model.Grid_Connection_Cost*model.Grid_Connection / ((1 + model.Discount_Rate)**(model.Years)) 
+        SV_Grid = model.Grid_Distance*model.Grid_Connection_Cost*model.Grid_Connection / ((1 + model.WACC)**(model.Years)) 
         
     if model.Steps_Number > 2:
         tup_list_2 = [[] for i in range(len(model.steps)-2)]
@@ -252,18 +252,18 @@ def Salvage_Value(model):
         ut_seclast_up = tup_list[-2][1]
 
         SV_Ren_1 = sum(model.RES_Units[1,r]*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r] * (model.RES_Lifetime[r]-model.Years)/model.RES_Lifetime[r] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for r in model.renewable_sources)    
+                        ((1 + model.WACC)**(model.Years)) for r in model.renewable_sources)    
         SV_Ren_2 = sum((model.RES_Units[ut_last_up,r] - model.RES_Units[ut_seclast_up,r])*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r] * (model.RES_Lifetime[r]+(yt_last_up-1)-model.Years)/model.RES_Lifetime[r] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for r in model.renewable_sources)
+                        ((1 + model.WACC)**(model.Years)) for r in model.renewable_sources)
         SV_Ren_3 = sum(sum((model.RES_Units[ut,r] - model.RES_Units[ut-1,r])*model.RES_Nominal_Capacity[r]*model.RES_Specific_Investment_Cost[r] * (model.RES_Lifetime[r]+(yt-1)-model.Years)/model.RES_Lifetime[r] / 
-                        ((1+model.Discount_Rate)**model.Years) for (yt,ut) in tup_list_2) for r in model.renewable_sources)        
+                        ((1+model.WACC)**model.Years) for (yt,ut) in tup_list_2) for r in model.renewable_sources)        
         SV_Gen_1 = sum(model.Generator_Nominal_Capacity[1,g]*model.Generator_Specific_Investment_Cost[g] * (model.Generator_Lifetime[g]-model.Years)/model.Generator_Lifetime[g] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for g in model.generator_types)
+                        ((1 + model.WACC)**(model.Years)) for g in model.generator_types)
         SV_Gen_2 = sum((model.Generator_Nominal_Capacity[ut_last_up,g] - model.Generator_Nominal_Capacity[ut_seclast_up,g])*model.Generator_Specific_Investment_Cost[g] * (model.Generator_Lifetime[g]+(yt_last_up-1)-model.Years)/model.Generator_Lifetime[g] / 
-                        ((1 + model.Discount_Rate)**(model.Years)) for g in model.generator_types)
+                        ((1 + model.WACC)**(model.Years)) for g in model.generator_types)
         SV_Gen_3 = sum(sum((model.Generator_Nominal_Capacity[ut,g] - model.Generator_Nominal_Capacity[ut-1,g])*model.Generator_Specific_Investment_Cost[g] * (model.Generator_Lifetime[g]+(yt-1)-model.Years)/model.Generator_Lifetime[g] / 
-                        ((1+model.Discount_Rate)**model.Years) for (yt,ut) in tup_list_2) for g in model.generator_types)
-        SV_Grid = model.Grid_Distance*model.Grid_Connection_Cost*model.Grid_Connection / ((1 + model.Discount_Rate)**(model.Years)) 
+                        ((1+model.WACC)**model.Years) for (yt,ut) in tup_list_2) for g in model.generator_types)
+        SV_Grid = model.Grid_Distance*model.Grid_Connection_Cost*model.Grid_Connection / ((1 + model.WACC)**(model.Years)) 
         
     return model.Salvage_Value ==  SV_Ren_1 + SV_Gen_1 + SV_Ren_2 + SV_Gen_2 + SV_Ren_3 + SV_Gen_3 + SV_Grid 
 
