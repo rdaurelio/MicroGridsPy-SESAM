@@ -1,5 +1,5 @@
 param: Periods := 8760;                                     # Periods considered in one year (8760h/y in the example)
-param: Years := 20;                                         # Total duration of the project
+param: Years := 1;                                         # Total duration of the project
 param: Step_Duration := 20;                                 # Duration (in years) of each investment decision step in which the project lifetime will be split
 param: Min_Last_Step_Duration := 1;                         # Minimum duration (in years) of the last investment decision step, in case of non-homogeneous divisions of the project lifetime 
 param: StartDate := '01/01/2022 00:00:00';                  # Start date of the project
@@ -12,9 +12,15 @@ param: RE_Supply_Calculation := 0;   			# 1 to select solar PV and wind producti
 param: Demand_Profile_Generation := 0;   		# 1 to select load demand profile generation by the program, 0 otherwise
 param: Grid_Availability_Simulation := 0;       # 1 to simulate grid availability, 0 otherwise
 
-param: Discount_Rate := 0.1;                                # Real discount rate accounting also for inflation
-param: Investment_Cost_Limit := 500000;                     # Upper limit to investment cost [USD] (considered only in case Optimization_Goal='Operation cost')
+param: WACC_Calculation := 1;                               # 1 to select Weighted Average Cost of Capital calculation, 0 otherwise
+param: cost_of_equity := 0.12;                               # Cost of equity, i.e., rate of return on equity capital from shareholders
+param: cost_of_debt := 0.11;                                 # Cost of debt, i.e., rate of return on loaned debt capital
+param: tax := 0.02;                                          # Corporate tax to be applied on loaned debt
+param: equity_share := 0.10;                                  # Total level of equity as a share of the total investment cost [-]
+param: debt_share := 0.90;                                   # Total level of debt as a share of the total investment cost [-]
 
+param: Discount_Rate := 0.02;                                # Generic discount rate to be applied if WACC_Calculation is not selected
+param: Investment_Cost_Limit := 500000;                     # Upper limit to investment cost [USD] (considered only in case Optimization_Goal='Operation cost')
 
 param: RES_Sources := 2;                                    # Number of Renewable Energy Sources (RES) types
 param: RES_Names :=                                         # Renewable Energy Sources (RES) names
