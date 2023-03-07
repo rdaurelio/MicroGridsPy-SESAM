@@ -21,6 +21,7 @@ Possible features:
     Brownfield optimization.
     Built-in load archetypes for rural users.
     Endogenous calculation of renewable energy sources production.
+    Possibility of considering the Weighted Average Cost of Capital (WACC) for computing the NPC.
 	
  
 ### Required libraries
