@@ -3,6 +3,7 @@ FOLDERS:
 "Inputs"	: inputs for resource availability, demand curve, technology characterization.
 "Results"	: results of the model in .XLSX form.
 "Demand_archetypes" : list of demand archetypes for different rural users.
+"Environments" : contains the YML files with the anaconda environments (for windows and MAC users)
 
 
 SCRIPTS:
