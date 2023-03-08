@@ -159,6 +159,7 @@ dependencies:
     - ply==3.11
     - pyomo==5.7.1
     - pyutilib==6.0.0
+    - windrose==1.8.1
     - xlrd==1.2.0
 prefix: /opt/anaconda3/envs/mgp
 
