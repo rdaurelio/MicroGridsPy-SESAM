@@ -1,22 +1,3 @@
-"""
-MicroGridsPy - Multi-year capacity-expansion (MYCE)
-
-Linear Programming framework for microgrids least-cost sizing,
-able to account for time-variable load demand evolution and capacity expansion.
-
-Authors: 
-    Giulia Guidicini   - Department of Energy, Politecnico di Milano 
-    Lorenzo Rinaldi    - Department of Energy, Politecnico di Milano
-    Nicolò Stevanato   - Department of Energy, Politecnico di Milano / Fondazione Eni Enrico Mattei
-    Francesco Lombardi - Department of Energy, Politecnico di Milano
-    Emanuela Colombo   - Department of Energy, Politecnico di Milano
-Based on the original model by:
-    Sergio Balderrama  - Department of Mechanical and Aerospace Engineering, University of Liège / San Simon University, Centro Universitario de Investigacion en Energia
-    Sylvain Quoilin    - Department of Mechanical Engineering Technology, KU Leuven
-"""
-
-
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -26,12 +7,12 @@ import warnings; warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 #%% Results summary
-def ResultsSummary(instance, Optimization_Goal, TimeSeries, Brownfield_Investment):
+def ResultsSummary(instance, Optimization_Goal, TimeSeries):
 
     from Results import EnergySystemCost, EnergySystemSize, YearlyCosts, YearlyEnergyParams, YearlyEnergyParamsSC  
     
     print('Results: exporting economic results...')
-    EnergySystemCost = EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment)
+    EnergySystemCost = EnergySystemCost(instance, Optimization_Goal)
     YearlyCost       = YearlyCosts(instance) 
     print('         exporting technical results...')
     EnergySystemSize   = EnergySystemSize(instance)        
@@ -210,7 +191,7 @@ def TimeSeries(instance):
 
     
 #%% Economic output        
-def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
+def EnergySystemCost(instance, Optimization_Goal):
     
     #%% Importing parameters
     S  = int(instance.Scenarios.extract_values()[None])
@@ -258,10 +239,7 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     RES_Inv_Specific_Cost = instance.RES_Specific_Investment_Cost.extract_values()
     RES_Investment_Cost = pd.DataFrame()
     for r in range(1,R+1):
-        if Brownfield_Investment == 1:
-            r_inv = (RES_Units[1,r]-RES_units[r])*RES_Nominal_Capacity[r]*RES_Inv_Specific_Cost[r]
-        elif Brownfield_Investment == 0:
-            r_inv = (RES_Units[1,r])*RES_Nominal_Capacity[r]*RES_Inv_Specific_Cost[r]
+        r_inv = (RES_Units[1,r]-RES_units[r])*RES_Nominal_Capacity[r]*RES_Inv_Specific_Cost[r]
         res_inv = pd.DataFrame(['Investment cost', RES_Names[r], '-', 'kUSD', r_inv/1e3]).T.set_index([0,1,2,3]) 
         if ST == 1:
             res_inv.columns = ['Total']
@@ -289,10 +267,7 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     BESS_capacity = instance.Battery_capacity.value
     BESS_Inv_Specific_Cost = instance.Battery_Specific_Investment_Cost.value
     BESS_Investment_Cost = pd.DataFrame()
-    if Brownfield_Investment == 1:
-        b_inv = (BESS_Nominal_Capacity[1]-BESS_capacity)*BESS_Inv_Specific_Cost
-    elif Brownfield_Investment == 0:
-        b_inv = (BESS_Nominal_Capacity[1])*BESS_Inv_Specific_Cost
+    b_inv = (BESS_Nominal_Capacity[1]-BESS_capacity)*BESS_Inv_Specific_Cost
     bess_inv = pd.DataFrame(['Investment cost', 'Battery bank', '-', 'kUSD', b_inv/1e3]).T.set_index([0,1,2,3]) 
     if ST == 1:
         bess_inv.columns = ['Total']
@@ -321,10 +296,7 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     Generator_capacity = instance.Generator_capacity.extract_values()     
     Generator_Investment_Cost = pd.DataFrame()
     for g in range(1,G+1):
-        if Brownfield_Investment == 1:
-            g_inv = (Generator_Capacity[1,g]-Generator_capacity[g])*Generator_Inv_Specific_Cost[g]
-        elif Brownfield_Investment == 0:
-            g_inv = (Generator_Capacity[1,g])*Generator_Inv_Specific_Cost[g]
+        g_inv = (Generator_Capacity[1,g]-Generator_capacity[g])*Generator_Inv_Specific_Cost[g]
         gen_inv = pd.DataFrame(['Investment cost', Generator_Names[g], '-', 'kUSD', g_inv/1e3]).T.set_index([0,1,2,3]) 
         if ST == 1:
             gen_inv.columns = ['Total']
@@ -347,17 +319,26 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     if ST != 1:
         Generator_Investment_Cost = pd.concat([Generator_Investment_Cost, gen_inv_tot],axis=1)
 
-    "National Grid" ####
+    "National Grid"
     Grid_Connection_Specific_Cost = instance.Grid_Connection_Cost.extract_values()  
     Grid_Distance = instance.Grid_Distance.extract_values()   
     Grid_Investment_Cost = pd.DataFrame()
-    gr_inv = Grid_Distance[None]*Grid_Connection_Specific_Cost[None]* instance.Grid_Connection.extract_values()[None]/((1+Discount_Rate)**(instance.Year_Grid_Connection.value-1))
+    gr_inv = Grid_Distance[None]*Grid_Connection_Specific_Cost[None]* instance.Grid_Connection.extract_values()[None]
     grid_inv = pd.DataFrame(['Investment cost', 'National grid', '-', 'kUSD', gr_inv/1e3]).T.set_index([0,1,2,3]) 
     if ST == 1:
         grid_inv.columns = ['Total']
     else:
         grid_inv.columns = ['Step 1']
     Grid_Investment_Cost = pd.concat([Grid_Investment_Cost, grid_inv], axis=1).fillna(0)
+    for (y,st) in tup_list:
+        gr_inv = (Grid_Distance[None]*Grid_Connection_Specific_Cost[None])/((1+Discount_Rate)**(y-1))
+        grid_inv = pd.DataFrame(['Investment cost', 'National Grid', '-', 'kUSD', gr_inv/1e3]).T.set_index([0,1,2,3]) 
+        if ST == 1:
+            grid_inv.columns = ['Total']
+        else:
+            grid_inv.columns = ['Step '+str(st)]
+        grid_inv.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
+        Grid_Investment_Cost = pd.concat([Grid_Investment_Cost, grid_inv], axis=1).fillna(0)
     Grid_Investment_Cost = Grid_Investment_Cost.groupby(level=[0], axis=1, sort=False).sum()
     grid_inv_tot = Grid_Investment_Cost.sum(1).to_frame()
     grid_inv_tot.columns = ['Total']
@@ -425,10 +406,24 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     Fixed_Costs_Act.columns = ['Total']     
     #%% Variable costs
 
+    "Grid electricity cost and revenue"  
+    Grid_El_Cost = pd.DataFrame()
+    Grid_El_Rev = pd.DataFrame()
+    for s in range(1,S+1):
+        Grid_Cost = pd.DataFrame(['Grid electricity cost', "National Grid", s , 'kUSD', instance.Total_Electricity_Cost_Act.get_values()[s]/1e3]).T
+        Grid_Rev = pd.DataFrame(['Grid electricity revenue', "National Grid", s , 'kUSD', instance.Total_Revenues_Act.get_values()[s]/1e3]).T
+        Grid_El_Cost = pd.concat([Grid_El_Cost, Grid_Cost], axis=0)
+        Grid_El_Rev = pd.concat([Grid_El_Rev, Grid_Rev], axis=0)
+    Grid_El_Cost = Grid_El_Cost.set_index([0,1,2,3])
+    Grid_El_Rev = Grid_El_Rev.set_index([0,1,2,3])
+    Grid_El_Cost.columns = ['Total']
+    Grid_El_Rev.columns = ['Total']    
+    
     "Total"
     Variable_Costs_Act = pd.DataFrame()
     for s in range(1,S+1):
-        Variable_Cost = pd.DataFrame(['Total variable O&M cost', 'System', s, 'kUSD', (instance.Total_Scenario_Variable_Cost_Act.get_values()[s] - instance.Operation_Maintenance_Cost_Act.value)/1e3]).T
+        Variable_Cost = pd.DataFrame(['Total variable O&M cost', 'System', s, 'kUSD', (instance.Total_Scenario_Variable_Cost_Act.get_values()[s] - instance.Operation_Maintenance_Cost_Act.value +
+                                      Grid_El_Rev.iloc[0]['Total']*1000)/1e3]).T
         Variable_Costs_Act = pd.concat([Variable_Costs_Act, Variable_Cost], axis=0)
     Variable_Costs_Act = Variable_Costs_Act.set_index([0,1,2,3])
     Variable_Costs_Act.columns = ['Total']      
@@ -449,19 +444,6 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
             Fuel_Cost = pd.concat([Fuel_Cost, fc], axis=0)
     Fuel_Cost = Fuel_Cost.set_index([0,1,2,3])
     Fuel_Cost.columns = ['Total']
-
-    "Grid electricity cost and revenue"  
-    Grid_El_Cost = pd.DataFrame()
-    Grid_El_Rev = pd.DataFrame()
-    for s in range(1,S+1):
-        Grid_Cost = pd.DataFrame(['Grid electricity cost', "National Grid", s , 'kUSD', instance.Total_Electricity_Cost_Act.get_values()[s]/1e3]).T
-        Grid_Rev = pd.DataFrame(['Grid electricity revenue', "National Grid", s , 'kUSD', instance.Total_Revenues_Act.get_values()[s]/1e3]).T
-        Grid_El_Cost = pd.concat([Grid_El_Cost, Grid_Cost], axis=0)
-        Grid_El_Rev = pd.concat([Grid_El_Rev, Grid_Rev], axis=0)
-    Grid_El_Cost = Grid_El_Cost.set_index([0,1,2,3])
-    Grid_El_Rev = Grid_El_Rev.set_index([0,1,2,3])
-    Grid_El_Cost.columns = ['Total']
-    Grid_El_Rev.columns = ['Total']    
     
     "Lost load cost"
     LostLoad_Cost = pd.DataFrame()        
@@ -510,14 +492,13 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     CO2_grid = CO2_grid.set_index([0,1,2,3])
     CO2_grid.columns = ['Total']   
      #%% Net present cost
-    if Optimization_Goal == 'NPC':              
+    if Optimization_Goal == 1:              
         Net_Present_Cost = pd.DataFrame(['Weighted Net present cost', 'System', '-', 'kUSD', (instance.ObjectiveFuntion.expr() + Grid_Investment + Grid_Fixed_Cost.iloc[0]['Total']*1000)/1e3]).T.set_index([0,1,2,3])
         Net_Present_Cost.columns = ['Total']
         Net_Present_Cost.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
                                     
-    elif Optimization_Goal == 'Operation cost':
-        # Total_Variable_Cost_NonAct = instance.ObjectiveFunction.expr()
-        Net_Present_Cost = pd.DataFrame(['Weighted Net present cost', 'System', '-', 'kUSD', ((sum(instance.Scenario_Net_Present_Cost.get_values()[s]*instance.Scenario_Weight.extract_values()[s] for s in range (1,S+1))) + Grid_Investment + Grid_Fixed_Cost.iloc[0]['Total']*1000)/1e3]).T.set_index([0,1,2,3]) 
+    elif Optimization_Goal == 2:
+        Net_Present_Cost = pd.DataFrame(['Weighted Net present cost', 'System', '-', 'kUSD', (instance.ObjectiveFuntion.expr() + Grid_Investment + Grid_Fixed_Cost.iloc[0]['Total']*1000)/1e3]).T.set_index([0,1,2,3])
         Net_Present_Cost.columns = ['Total']
         Net_Present_Cost.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
     
@@ -541,7 +522,7 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     LCOE_scenarios.columns = ['Total']
     
     Net_Present_Demand = sum(Electric_Demand.iloc[i-1,0]/(1+Discount_Rate)**i for i in range(1,(Y+1)))    #[Wh]
-    LCOE = pd.DataFrame([Net_Present_Cost.iloc[0,0]/Net_Present_Demand])*1e6    #[USD/KWh]
+    LCOE = pd.DataFrame([(Net_Present_Cost.iloc[0,0] + Grid_El_Rev.iloc[0]['Total']*1000/1e3)/Net_Present_Demand])*1e6    #[USD/KWh]
     LCOE.index = pd.MultiIndex.from_arrays([['Levelized Cost of Energy '],['System'],['-'],['USD/kWh']])
     LCOE.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
     LCOE.columns = ['Total']
@@ -1079,6 +1060,7 @@ def PrintResults(instance, Results):
     print('\n\nNPC = '+str(round(Results['Costs'].iloc[0,-1],2))+' kUSD')
     print('Total actualized Investment Cost = '+str(round(Results['Costs'].iloc[2,-1],2))+' kUSD')
     print('Total actualized Operation Cost = '+str(round(Results['Costs'].iloc[3,-1]+Results['Costs'].iloc[4,-1],2))+' kUSD')
+    print('Total actualized Electricity Selling Revenues = '+str(round(Results['Costs'].iloc[20,-1],2))+' kUSD')
     print('Salvage Value = '+str(round(Results['Costs'].iloc[5,-1],2))+' kUSD')
     print('LCOE = '+str(Results['Costs'].iloc[6,-1])+' USD/kWh')
     print('\nAverage renewable penetration per year = '+ str(round(Results['Renewables Penetration'].sum().sum()/Y,2))+' %')

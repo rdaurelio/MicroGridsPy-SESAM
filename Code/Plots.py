@@ -134,7 +134,7 @@ def DispatchPlot(instance,TimeSeries,PlotScenario,PlotDate,PlotTime,PlotResoluti
     Curtailment_Color = instance.Curtailment_Color()
     Energy_to_grid_Color = instance.Energy_To_Grid_Color() 
     Energy_from_grid_Color = instance.Energy_From_Grid_Color() 
-
+    
     Colors_pos = []
     for r in range(1,R+1):
          Colors_pos += ['#'+RES_Colors[r]]
@@ -824,7 +824,7 @@ def CashFlowPlot(instance,Results,PlotResolution,PlotFormat):
 
     if ST == 1:
         Investment_BESS[0] = Results['Costs'].loc[idx['Investment cost','Battery bank',:,:],'Total'].values[0]
-        Investment_Grid[0] = Results['Costs'].loc[idx['Investment cost','Electricity',:,:],'Total'].values[0] ####
+        Investment_Grid[0] = Results['Costs'].loc[idx['Investment cost','National grid',:,:],'Total'].values[0]
         for r in range(1,R+1):
             Investment_RES[RES_Names[r]][0] = Results['Costs'].loc[idx['Investment cost',RES_Names[r],:,:],'Total'].values[0]
         for g in range(1,G+1):
@@ -834,13 +834,15 @@ def CashFlowPlot(instance,Results,PlotResolution,PlotFormat):
             for y in range(1,Y+1):
                 if y==1:
                     Investment_BESS[y-1] = Results['Costs'].loc[idx['Investment cost','Battery bank',:,:],'Step 1'].values[0]
+                    Investment_Grid[0] = Results['Costs'].loc[idx['Investment cost','National grid',:,:],'Step 1'].values[0]
                     for r in range(1,R+1):
                         Investment_RES[RES_Names[r]][y-1] = Results['Costs'].loc[idx['Investment cost',RES_Names[r],:,:],'Step 1'].values[0]
                     for g in range(1,G+1):
                         Investment_Gen[Generator_Names[g]][y-1] = Results['Costs'].loc[idx['Investment cost',Generator_Names[g],:,:],'Step 1'].values[0]                
                 if st!=1:
                     if y==tup_list[st-2][0]:
-                        Investment_BESS[y-1] = Results['Costs'].loc[idx['Investment cost','Battery bank',:,:],'Step '+str(st)].values[0]
+                        Investment_BESS[y-1] = Results['Costs'].loc[idx['Investment cost','Battery bank',:,:],'Step '+ str(st)].values[0]
+                        Investment_Grid[0] = Results['Costs'].loc[idx['Investment cost','National grid',:,:],'Step '+ str(st)].values[0]
                         for r in range(1,R+1):
                             Investment_RES[RES_Names[r]][y-1] = Results['Costs'].loc[idx['Investment cost',RES_Names[r],:,:],'Step '+str(st)].values[0]
                         for g in range(1,G+1):
@@ -849,6 +851,7 @@ def CashFlowPlot(instance,Results,PlotResolution,PlotFormat):
 
 #%% Yearly cash flows
     Fixed_costs_BESS = Results['Yearly cash flows'].loc[:,idx['Fixed costs', 'Battery bank', :, :]].values
+    Fixed_costs_Grid = Results['Yearly cash flows'].loc[:,idx['Fixed costs', 'Grid', :, :]].values
     Fixed_costs_RES = {}
     for r in range(1,R+1):
         Fixed_costs_RES[r] = Results['Yearly cash flows'].loc[:,idx['Fixed costs', RES_Names[r], :, :]].values
@@ -859,18 +862,22 @@ def CashFlowPlot(instance,Results,PlotResolution,PlotFormat):
     lostloadcost = {}
     bessreplacementcost = {}
     fuelcost = {} 
+    gridcost = {}
     for s in range(1,S+1):
         lostloadcost[s] = Results['Yearly cash flows'].loc[:,idx['Lost load cost', :, s, :]].values 
         bessreplacementcost[s] = Results['Yearly cash flows'].loc[:,idx['Replacement cost', 'Battery bank', s, :]].values 
         fuelcost[s] = {}
+        gridcost[s] = Results['Yearly cash flows'].loc[:,idx['Grid cost', 'Grid', s, :]].values
         for g in range(1,G+1):
             fuelcost[s][g] = Results['Yearly cash flows'].loc[:,idx['Fuel cost', Fuel_Names[g], s, :]].values 
     
     Lost_load_cost = np.arange(Y)*0
     BESS_replacement_cost = np.arange(Y)*0
+    Grid_Electricity_cost = np.arange(Y)*0
     for s in range(1,S+1):    
         Lost_load_cost = [a+b for (a,b) in zip(Lost_load_cost,lostloadcost[s].T[0])]
         BESS_replacement_cost = [a+b for (a,b) in zip(BESS_replacement_cost,bessreplacementcost[s].T[0])]
+        Grid_Electricity_cost = [a+b for (a,b) in zip(Grid_Electricity_cost,gridcost[s].T[0])]
     Lost_load_cost = [i/S for i in Lost_load_cost]
     BESS_replacement_cost = [i/S for i in BESS_replacement_cost]
 
@@ -880,12 +887,15 @@ def CashFlowPlot(instance,Results,PlotResolution,PlotFormat):
         for s in range(1,S+1):    
             Fuel_cost[g] = [a+b for (a,b) in zip(Fuel_cost[g],fuelcost[s][g].T[0])]
         Fuel_cost[g] = [i/S for i in Fuel_cost[g]]
+          
+        
             
 #%% Plotting
     fig = plt.figure(figsize=(20,15))
 
     RES_Colors  = instance.RES_Colors.extract_values()
     BESS_Color  = instance.Battery_Color()
+    Grid_Color = instance.Energy_From_Grid_Color()
     Generator_Colors = instance.Generator_Colors.extract_values()
     Lost_Load_Color = instance.Lost_Load_Color()
 
@@ -901,6 +911,14 @@ def CashFlowPlot(instance,Results,PlotResolution,PlotFormat):
             label='Battery bank',
             zorder = 3) 
     base = Investment_BESS
+
+    plt.bar(x_positions, 
+            Investment_Grid, 
+            color='#'+Grid_Color,
+            edgecolor= 'black',
+            label='National Grid',
+            zorder = 3) 
+    base = Investment_Grid
     
     for r in range(1,R+1):
         plt.bar(x_positions, 
@@ -933,6 +951,16 @@ def CashFlowPlot(instance,Results,PlotResolution,PlotFormat):
             bottom = base,
             zorder = 3) 
     base = [a+b for (a,b) in zip(base, [Fixed_costs_BESS[i][0] for i in range(len(Fixed_costs_BESS))])]   
+    
+    plt.bar(x_positions, 
+            [Fixed_costs_Grid[i][0] for i in range(len(Fixed_costs_Grid))], 
+            color='#'+Grid_Color,
+            edgecolor= 'black',
+            label='_nolegend_',
+            hatch='x',
+            bottom = base,
+            zorder = 3) 
+    base = [a+b for (a,b) in zip(base, [Fixed_costs_Grid[i][0] for i in range(len(Fixed_costs_Grid))])]
     
     for r in range(1,R+1):
         plt.bar(x_positions, 
@@ -976,6 +1004,16 @@ def CashFlowPlot(instance,Results,PlotResolution,PlotFormat):
             bottom = base,
             zorder = 3) 
     base = [a+b for (a,b) in zip(base, BESS_replacement_cost)]        
+    
+    plt.bar(x_positions, 
+            Grid_Electricity_cost, 
+            color='#'+Grid_Color,
+            edgecolor= 'black',
+            label='_nolegend_',
+            hatch='//',                     
+            bottom = base,
+            zorder = 3) 
+    base = [a+b for (a,b) in zip(base, Grid_Electricity_cost)] 
 
     for g in range(1,G+1):        
         plt.bar(x_positions, 

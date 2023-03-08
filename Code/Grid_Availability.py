@@ -1,5 +1,6 @@
 import math, numpy as np, pandas as pd
 import matplotlib.pyplot as plt
+from openpyxl import load_workbook
 
 #%% Function returning as output a logical matrix (0 and 1) representing the availability of the grid, at hourly resolution
 
@@ -154,7 +155,13 @@ def grid_availability(average_n_outages, average_outage_duration, project_lifeti
     '''
     
     print("Calculation of Grid Availability Matrix for " + str(grid_lifetime) + " years of grid connection completed" )
-    grid_availability_lifetime.to_excel("Inputs/Grid_availability.xlsx")
+    filename = "Inputs/Generation.xlsx"
+    book = load_workbook(filename)
+    writer = pd.ExcelWriter(filename, engine='openpyxl') 
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    grid_availability_lifetime.to_excel(writer, sheet_name = 'Grid Availability', index=False, header = True, startrow = 0, startcol = 0)
+    writer.save()
     return 
     
     
