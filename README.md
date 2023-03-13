@@ -15,7 +15,7 @@ Main features:
 Possible features:
 
     Two-stage stochastic optimization.
-    LP or MILP optimization.
+    LP or MILP optimization. 
     Multi-year evolving load demand and multi-step capacity expansion.
     Possibility of connecting to the national grid.
     Two-objective optimization (economic and environmental objective functions).
