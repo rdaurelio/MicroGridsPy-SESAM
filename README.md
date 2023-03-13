@@ -16,8 +16,9 @@ Possible features:
 
     Two-stage stochastic optimization.
     LP or MILP optimization. 
+    Optimization at 1 minute time-step (suited for coupling with RAMP load profiles)
     Multi-year evolving load demand and multi-step capacity expansion.
-    Possibility of connecting to the national grid.
+    Possibility of optimizing grid-connected microgrids.
     Two-objective optimization (economic and environmental objective functions).
     Brownfield optimization.
     Built-in load archetypes for rural users.
