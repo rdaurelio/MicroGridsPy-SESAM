@@ -1,5 +1,6 @@
 MicroGridsPy - Version 2.0
 ========================
+![Logo-removebg-preview](https://user-images.githubusercontent.com/73618037/225133109-2a61160e-2b0e-4fda-af5c-f36929b0490e.png)
 
 ### Description
 
