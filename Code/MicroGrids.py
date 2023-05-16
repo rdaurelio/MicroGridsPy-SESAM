@@ -1,11 +1,3 @@
-"""
-MicroGridsPy - Multi-year capacity-expansion (MYCE)
-
-Linear Programming framework for microgrids least-cost sizing,
-able to account for time-variable load demand evolution and capacity expansion.
-
-"""
-
 import time
 from pyomo.environ import  AbstractModel
 from Model_Creation import Model_Creation
@@ -47,7 +39,7 @@ PlotFormat2 = 'png'                  # Desired extension of the saved file (Vali
 PlotResolution2 = 400                # Plot resolution in dpi (useful only for .png files, .svg and .pdf output a vector plot)
 
 PlotScenario3 = 1                    # Plot scenario
-PlotDate3 = '01/01/2038 00:00:00'    # Month-Day-Year. If devoid of meaning: Day-Month-Year
+PlotDate3 = '01/01/2038 00:00:00'    # Month-Day-Year. If devoid of meaning: Day-Month-Year 
 PlotTime3 = 3                        # Number of days to be shown in the plot
 PlotFormat3 = 'png'                  # Desired extension of the saved file (Valid formats: png, svg, pdf)
 PlotResolution3 = 400                # Plot resolution in dpi (useful only for .png files, .svg and .pdf output a vector plot)

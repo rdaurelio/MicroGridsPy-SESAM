@@ -161,6 +161,15 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
                                                     model.years_steps,
                                                     model.periods, 
                                                     rule=C. Battery_Single_Flow_Charge)
+        model.SingleFlowEnergyToGrid      = Constraint(model.scenarios,
+                                                 model.years_steps,
+                                                 model.periods,
+                                                 rule=C.Single_Flow_Energy_To_Grid)
+        model.SingleFlowEnergyFromGrid  = Constraint(model.scenarios,
+                                                 model.years_steps,
+                                                 model.periods,
+                                                rule=C.Single_Flow_Energy_From_Grid)
+        
     if Battery_Independence > 0:
         model.BatteryMinCapacity   = Constraint(model.steps, 
                                                 rule=C.Battery_Min_Capacity)
@@ -184,14 +193,7 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
                                                 model.years_steps,
                                                 model.periods,
                                                 rule=C.Maximum_Power_To_Grid) 
-    model.SingleFlowEnergyToGrid      = Constraint(model.scenarios,
-                                                 model.years_steps,
-                                                 model.periods,
-                                                 rule=C.Single_Flow_Energy_To_Grid)
-    model.SingleFlowEnergyFromGrid  = Constraint(model.scenarios,
-                                                 model.years_steps,
-                                                 model.periods,
-                                                rule=C.Single_Flow_Energy_From_Grid)
+
     
     "Lost load constraints"
     model.MaximunLostLoad = Constraint(model.scenarios, model.years, 
@@ -229,8 +231,10 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
     
         opt = SolverFactory('gurobi') # Solver use during the optimization
         timelimit = 100000
-        opt.options['timelimit'] = timelimit
-        opt.options['BarHomogeneous'] = 1
+        if MILP_Formulation:
+            opt.set_options('Method=3 BarHomogeneous=1 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000')
+        else:
+            opt.set_options('Method=2 BarHomogeneous=0 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000')
     
         #opt.set_options('Method=1 BarHomogeneous=1 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000') # !! only works with GUROBI solver   
 
@@ -260,7 +264,10 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
             model.ObjectiveFuntion1.deactivate()
             instance = model.create_instance(datapath)
             opt = SolverFactory('gurobi')
-            opt.set_options('Method=1 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000') # !! only works with GUROBI solver
+            if MILP_Formulation:
+                opt.set_options('Method=3 BarHomogeneous=1 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000')
+            else:
+                opt.set_options('Method=2 BarHomogeneous=0 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000')
             print('Calling solver...')
             opt.solve(instance, tee=True)
             print('Instance solved') 
