@@ -48,6 +48,22 @@ param: hospital_3:= '0';							#number of hospitals of type 3
 param: hospital_4:= '0';							#number of hospitals of type 4
 param: hospital_5:= '0';							#number of hospitals of type 5
 
+# --- Model switches ---
+
+param: Optimization_Goal := 1;                          # Options: 1 = NPC / 2 = Operation cost. It allows to switch between a NPC-oriented optimization and a NON-ACTUALIZED Operation Cost-oriented optimization
+param: MILP_Formulation := 1;                     # 1 to activate MILP formulation (for monodirectional energy flows), 0 otherwise
+param: Multiobjective_Optimization := 0;                    # 1 if optimization of NPC/operation cost and CO2 emissions,0 otherwise
+param: Greenfield_Investment := 1;                   # 1 if Greenfield investment, 0 Brownfield investment
+param: Plot_Max_Cost := 1;                                     # 1 if the Pareto curve has to include the point at maxNPC/maxOperationCost, 0 otherwise
+param: Renewable_Penetration := 0;                            # Fraction of electricity produced by renewable sources. Number from 0 to 1.
+param: Battery_Independence  := 0;                            # Number of days of battery independence
+param: RE_Supply_Calculation := 0;  			                # 1 to select solar PV and wind production time series calculation (using NASA POWER data), 0 otherwise
+param: Demand_Profile_Generation := 0;   		                   # 1 to select load demand profile generation (with demand archetypes), 0 otherwise
+param: Grid_Connection := 0;                                   # 1 to select grid connection during project lifetime, 0 otherwise
+param: Grid_Availability_Simulation := 0;                     # 1 to simulate grid availability, 0 otherwise
+param: Grid_Connection_Type := 1;	                            # 2 for sell/purchase power with the national grid, 1 for purchase only
+
+
 # --- Model parameters ---
 
 param: Periods := 8760;                                     # Periods considered in one year (8760h/y in the example)
@@ -63,18 +79,6 @@ param: Scenario_Weight :=                                   # Occurrence probabi
 param: Discount_Rate := 0.1;                                  # Real discount rate accounting also for inflation
 param: Investment_Cost_Limit := 500000;                     # Upper limit to investment cost [USD] (considered only in case Optimization_Goal='Operation cost')
 
-param: Optimization_Goal := 1;                          # Options: 1 = NPC / 2 = Operation cost. It allows to switch between a NPC-oriented optimization and a NON-ACTUALIZED Operation Cost-oriented optimization
-param: MILP_Formulation := 1;                     # 1 to activate MILP formulation (for monodirectional energy flows), 0 otherwise
-param: Multiobjective_Optimization := 0;                    # 1 if optimization of NPC/operation cost and CO2 emissions,0 otherwise
-param: Greenfield_Investment := 1;                   # 1 if Greenfield investment, 0 Brownfield investment
-param: Plot_Max_Cost := 1;                                     # 1 if the Pareto curve has to include the point at maxNPC/maxOperationCost, 0 otherwise
-param: Renewable_Penetration := 0;                            # Fraction of electricity produced by renewable sources. Number from 0 to 1.
-param: Battery_Independence  := 0;                            # Number of days of battery independence
-param: RE_Supply_Calculation := 0;  			                # 1 to select solar PV and wind production time series calculation (using NASA POWER data), 0 otherwise
-param: Demand_Profile_Generation := 0;   		                   # 1 to select load demand profile generation (with demand archetypes), 0 otherwise
-param: Grid_Connection := 0;                                   # 1 to select grid connection during project lifetime, 0 otherwise
-param: Grid_Availability_Simulation := 0;                     # 1 to simulate grid availability, 0 otherwise
-param: Grid_Connection_Type := 1;	                            # 2 for sell/purchase power with the national grid, 1 for purchase only
 
 param: RES_Sources := 1;                                    # Number of Renewable Energy Sources (RES) types
 param: RES_Names :=                                         # Renewable Energy Sources (RES) names
