@@ -1,7 +1,7 @@
 from collections import defaultdict
 import time, sys, concurrent.futures, urllib.request, urllib.parse, urllib.error    
 import pandas as pd, math, numpy as np, re, bisect, json, operator, copy, matplotlib.pyplot as plt
-from windrose import WindroseAxes
+#from windrose import WindroseAxes
 
 #%% Input data section
 

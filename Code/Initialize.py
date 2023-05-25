@@ -189,10 +189,15 @@ def Initialize_Battery_Minimum_Capacity(model,ut):
         return  Available_Energy/(1-model.Battery_Depth_of_Discharge)
 
 #%% 
-def Initialize_Generator_Marginal_Cost(model,s,y,g):
+def Initialize_Generator_Marginal_Cost(model,g):
     return model.Fuel_Specific_Cost[g]/(model.Fuel_LHV[g]*model.Generator_Efficiency[g])
 
+"Partial Load Effect"
+def Initialize_Generator_Start_Cost(model,g):
+    return model.Generator_Marginal_Cost[g]*model.Generator_Nominal_Capacity_milp[g]*model.Generator_pgen[g]
 
+def Initialize_Generator_Marginal_Cost_milp(model,g):
+    return ((model.Generator_Marginal_Cost[g]*model.Generator_Nominal_Capacity_milp[g])-model.Generator_Start_Cost[g])/model.Generator_Nominal_Capacity_milp[g] 
 
 
 if Grid_Availability_Simulation:
@@ -261,10 +266,6 @@ def Initialize_Multiobjective_Optimization(model):
 
 def Initialize_MILP_Formulation(model):
     return MILP_Formulation
-
-
-def Initialize_Renewable_Penetration(model):
-    return Renewable_Penetration
 
 def Initialize_Greenfield_Investment(model):
     return Greenfield_Investment

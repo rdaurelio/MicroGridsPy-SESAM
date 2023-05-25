@@ -11,6 +11,8 @@ from pyomo.environ import *
 from pyomo.opt import SolverFactory
 from matplotlib import pyplot as plt
 import re
+import sys
+
 
 def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mipgap=0.05",
                      warmstart=False, keepfiles=False, load_solutions=False, logfile="Solver_Output.log"):  
@@ -33,10 +35,25 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
             MILP_Formulation = int((re.findall('\d+',Data_import[i])[0]))
         if "param: Plot_Max_Cost" in Data_import[i]:      
             Plot_Max_Cost = int((re.findall('\d+',Data_import[i])[0]))
+        if "param: Generator_Partial_Load" in Data_import[i]:      
+            Generator_Partial_Load = int((re.findall('\d+',Data_import[i])[0]))
+    
+    if (Generator_Partial_Load == 1 and MILP_Formulation == 0):
+        print('###########################################################')
+        print('INPUT NOT VALID: if MILP_Formulation NOT activated (= 0), Generator_Partial_Load must be NOT activated (= 0) too!')
+        print('Please, edit file "Model_data.dat" and try again')
+        print('ABORT')
+        print('###########################################################')
+        sys.exit()
+        
 
-    if Greenfield_Investment:
+    if Greenfield_Investment == 1 and MILP_Formulation == 1 :
+        from Constraints import Constraints_Greenfield_Milp as C
+    if Greenfield_Investment == 0 and MILP_Formulation == 1 :
+        from Constraints import Constraints_Brownfield_Milp as C
+    if Greenfield_Investment == 1 and MILP_Formulation == 0 :
         from Constraints import Constraints_Greenfield as C
-    else: 
+    if Greenfield_Investment == 0 and MILP_Formulation == 0 : 
         from Constraints import Constraints_Brownfield as C   
  
     
@@ -64,8 +81,8 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
     model.FuelCostTotalAct             = Constraint(model.scenarios, 
                                             model.generator_types,
                                             rule=C.Total_Fuel_Cost_Act)
-    model.TotalElectricityCostAct        = Constraint(model.scenarios,
-                                                      rule=C.Total_Electricity_Cost_Act)   
+    model.TotalElectricityCostAct      = Constraint(model.scenarios,
+                                                    rule=C.Total_Electricity_Cost_Act)   
     model.TotalRevenuesAct             = Constraint(model.scenarios,
                                                     rule=C.Total_Revenues_Act)
     model.TotalRevenuesNonAct          = Constraint(model.scenarios,
@@ -99,11 +116,11 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
                                            model.renewable_sources,
                                            model.periods,
                                            rule=C.RES_Capacity)
-        model.BESScapacity             = Constraint(model.steps,
-                                                    rule=C.BESS_Capacity)
-        model.GENcapacity              = Constraint(model.steps,                                                
-                                                    model.generator_types,
-                                                    rule=C.GEN_Capacity)
+        model.BESScapacity    = Constraint(model.steps,
+                                           rule=C.BESS_Capacity)
+        model.GENcapacity     = Constraint(model.steps,                                                
+                                           model.generator_types,
+                                           rule=C.GEN_Capacity)
 
 
 #%% Electricity generation system constraints 
@@ -175,14 +192,53 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
                                                 rule=C.Battery_Min_Capacity)
 
     "Diesel generator constraints"
-    model.MaximunFuelEnergy        = Constraint(model.scenarios, 
-                                                model.years_steps, 
-                                                model.generator_types,
-                                                model.periods, 
-                                                rule=C.Maximun_Generator_Energy) # Maximun energy output of the diesel generator
-    model.GeneratorMinStepCapacity = Constraint(model.years_steps, 
-                                                model.generator_types, 
-                                                rule=C.Generator_Min_Step_Capacity)
+    if MILP_Formulation == 1 and Generator_Partial_Load == 1:
+       model.MinimumGeneratorEnergyPartial     = Constraint(model.scenarios, 
+                                                            model.years_steps, 
+                                                            model.generator_types,
+                                                            model.periods, 
+                                                            rule=C.Minimum_Generator_Energy_Partial)
+       model.MaximumGeneratorEnergyPartial     = Constraint(model.scenarios, 
+                                                            model.years_steps, 
+                                                            model.generator_types,
+                                                            model.periods, 
+                                                            rule=C.Maximum_Generator_Energy_Partial)
+       model.MaximumGeneratorEnergyTotal       = Constraint(model.scenarios,
+                                                            model.years_steps, 
+                                                            model.generator_types,
+                                                            model.periods, 
+                                                            rule=C.Maximum_Generator_Energy_Total)
+       model.GeneratorEnergyTotal              = Constraint(model.scenarios,
+                                                            model.years_steps, 
+                                                            model.generator_types,
+                                                            model.periods, 
+                                                            rule=C.Generator_Energy_Total)
+       model.GeneratorUnitsTotal               = Constraint(model.scenarios,
+                                                            model.years_steps, 
+                                                            model.generator_types,
+                                                            model.periods, 
+                                                            rule=C.Generator_Units_Total)
+       model.GeneratorMinStepCapacity          = Constraint(model.years_steps,
+                                                            model.generator_types, 
+                                                            rule=C.Generator_Min_Step_Capacity)
+    elif MILP_Formulation == 1 and Generator_Partial_Load == 0:
+       model.MaximumGeneratorEnergyTotal       = Constraint(model.scenarios, 
+                                                            model.years_steps, 
+                                                            model.generator_types,
+                                                            model.periods, 
+                                                            rule=C.Maximun_Generator_Energy_Total)
+       model.GeneratorMinStepCapacity = Constraint(model.years_steps, 
+                                                   model.generator_types, 
+                                                   rule=C.Generator_Min_Step_Capacity)
+    else:
+       model.MaximunFuelEnergy        = Constraint(model.scenarios, 
+                                                   model.years_steps, 
+                                                   model.generator_types,
+                                                   model.periods, 
+                                                   rule=C.Maximun_Generator_Energy)
+       model.GeneratorMinStepCapacity = Constraint(model.years_steps, 
+                                                   model.generator_types, 
+                                                   rule=C.Generator_Min_Step_Capacity)         
     "Grid constraints"  
     
     model.MaximumPowerFromGrid     = Constraint(model.scenarios,
@@ -231,12 +287,11 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
     
         opt = SolverFactory('gurobi') # Solver use during the optimization
         timelimit = 100000
+
         if MILP_Formulation:
-            opt.set_options('Method=3 BarHomogeneous=1 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000')
+            opt.set_options('Method=3 BarHomogeneous=1 Crossover=1 MIPfocus=1 BarConvTol=1e-3 OptimalityTol=1e-3 FeasibilityTol=1e-4 TimeLimit=10000')
         else:
             opt.set_options('Method=2 BarHomogeneous=0 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000')
-    
-        #opt.set_options('Method=1 BarHomogeneous=1 Crossover=0 BarConvTol=1e-4 OptimalityTol=1e-4 FeasibilityTol=1e-4 IterationLimit=1000') # !! only works with GUROBI solver   
 
         print('Calling solver...')
         results = opt.solve(instance, tee=True, options_string=options_string,

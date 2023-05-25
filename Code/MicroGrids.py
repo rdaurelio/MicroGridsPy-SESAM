@@ -21,8 +21,8 @@ Results    = ResultsSummary(instance, Optimization_Goal,Time_Series)
 
 #%% Plot and print-out
 PlotScenario = 1                     # Plot scenario
-PlotDate = '01/01/2019 00:00:00'     # Month-Day-Year. If devoid of meaning: Day-Month-Year
-PlotTime = 6                         # Number of days to be shown in the plot
+PlotDate = '01/01/2023 00:00:00'     # Month-Day-Year. If devoid of meaning: Day-Month-Year
+PlotTime = 3                         # Number of days to be shown in the plot
 PlotFormat = 'png'                   # Desired extension of the saved file (Valid formats: png, svg, pdf)
 PlotResolution = 400                 # Plot resolution in dpi (useful only for .png files, .svg and .pdf output a vector plot)
 '''
@@ -50,7 +50,7 @@ DispatchPlot1(instance,TimeSeries,PlotScenario1,PlotDate1,PlotTime1,PlotResoluti
 DispatchPlot2(instance,TimeSeries,PlotScenario2,PlotDate2,PlotTime2,PlotResolution2,PlotFormat2)
 DispatchPlot3(instance,TimeSeries,PlotScenario3,PlotDate3,PlotTime3,PlotResolution3,PlotFormat3)
 '''
-CashFlowPlot(instance,Results,PlotResolution,PlotFormat)
+#CashFlowPlot(instance,Results,PlotResolution,PlotFormat)
 SizePlot(instance,Results,PlotResolution,PlotFormat)
 
 PrintResults(instance, Results)  
