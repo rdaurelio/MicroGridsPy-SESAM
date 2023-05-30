@@ -2,10 +2,12 @@
 
 import re, time, pandas as pd, numpy as np
 
-def data_import(data_demand, data):
+def data_import(data_demand):
     for value in data_demand:
         if "param: lat" in value:
-            lat = float(value[value.index('=')+1:value.index(';')].replace(' ','').replace("'",""))
+            lat = (value[value.index('=')+1:value.index(';')])
+            numbers = re.compile('-?\d+')
+            lat = list(map(int, numbers.findall(lat)))[0]
             if  10 <= lat <=20:
                 F = 'F1'
             elif -10 <= lat < 10:
@@ -41,9 +43,7 @@ def data_import(data_demand, data):
         if "param: hospital_5" in value:
             num_hosp_5 = float(value[value.index('=')+1:value.index(';')].replace(' ','').replace("'",""))
         if "param: demand_growth" in value:
-            demand_growth = float(value[value.index('=')+1:value.index(';')].replace(' ','').replace("'",""))
-    for value in data:
-        
+            demand_growth = float(value[value.index('=')+1:value.index(';')].replace(' ','').replace("'",""))       
         if "param: Years" in value:
             years = int(value[value.index('=')+1:value.index(';')].replace(' ','').replace("'",""))
     
@@ -53,12 +53,11 @@ def data_import(data_demand, data):
 
 def demand_calculation():
     
-    data_demand = open("Inputs/Demand_data.dat").readlines()
-    data = open("Inputs/Model_data.dat").readlines()
+    data_demand = open("Inputs/Model_data.dat").readlines()
     
     num_h_tier = []
     
-    F, cooling_period, num_h_tier, num_services, demand_growth, years = data_import(data_demand,data)
+    F, cooling_period, num_h_tier, num_services, demand_growth, years = data_import(data_demand)
     
     class household:
       def __init__(self, zone, wealth, cooling, number):
@@ -112,33 +111,33 @@ def demand_calculation():
         else: 
             load_total[column] = load_total[column-1]*(1+demand_growth/100)    # yearly demand growth 
 
-    return load_total
+    return load_total, years
     
     #%% Export results to excel
-def excel_export(load, n_years):
+def excel_export(load,years):
     
-    load = load.set_axis(np.arange(1,n_years+1), axis=1, inplace=False)
+    load = load.set_axis(np.arange(1,years+1), axis=1, inplace=False)
     
     load.to_excel("Inputs/Demand.xlsx")
 
 
 #%% Calculates and export the load demand  time series of households and services for 20 years to Demand.xlsx
 
-def demand_generation(n_years):
+def demand_generation():
     start = time.time()
         
     print("Load demand calculation started, please remember to close Demand.xlsx... \n")
-    load_tot = demand_calculation()
-    load_tot = load_tot.set_axis(np.arange(1,n_years+1), axis=1, inplace=False)
-    excel_export(load_tot, n_years)
+    load_tot, years = demand_calculation()
+    excel_export(load_tot,years)
     
     
     end = time.time()
     elapsed = end - start
+    load_tot = load_tot.set_axis(np.arange(1,years+1), axis=1, inplace=False)
     print('\n\nLoad demand calculation completed (overall time: ',round(elapsed,0),'s,', round(elapsed/60,1),' m)\n')
     return load_tot
 
 if __name__ == "__Demand__":
     demand_calculation()
-    demand_generation(n_years)
+    demand_generation()
 

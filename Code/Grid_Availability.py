@@ -1,5 +1,8 @@
+"Module for simulation of national grid availability"
+
 import math, numpy as np, pandas as pd
 import matplotlib.pyplot as plt
+from openpyxl import load_workbook
 
 #%% Function returning as output a logical matrix (0 and 1) representing the availability of the grid, at hourly resolution
 
@@ -14,7 +17,7 @@ def Weibull_distrib(x,a,b):
 
      
 
-def grid_availability(average_n_outages, average_outage_duration, project_lifetime, year_grid_connection):  
+def grid_availability(average_n_outages, average_outage_duration, project_lifetime, year_grid_connection, N_Time_Steps):  
 
     grid_lifetime = project_lifetime - year_grid_connection + 1                                   
     lambda_TBO = 1620/60                                                                                #Weibull scale factor for Time Between Outages distrib. (would need to be found from fitting with historical data, here taken from Kebede et al.)
@@ -70,7 +73,7 @@ def grid_availability(average_n_outages, average_outage_duration, project_lifeti
     '''
     #%% Make random sampling based on the obtained Weibull distributions and construct grid availability matrix
     if average_n_outages == 0 and average_outage_duration == 0:
-         grid_availability_lifetime = pd.concat([pd.DataFrame(np.zeros((8760,project_lifetime-grid_lifetime))), pd.DataFrame(np.ones((8760,grid_lifetime)))], axis = 1)
+         grid_availability_lifetime = pd.concat([pd.DataFrame(np.zeros((8760*N_Time_Steps,project_lifetime-grid_lifetime))), pd.DataFrame(np.ones((8760**N_Time_Steps,grid_lifetime)))], axis = 1)
          grid_availability_lifetime = grid_availability_lifetime.set_axis(range(1,project_lifetime+1), axis=1, inplace=False)
     else:
         rng = np.random.default_rng()
@@ -95,10 +98,10 @@ def grid_availability(average_n_outages, average_outage_duration, project_lifeti
         for ii in range(0,n_samples):                               #populate the grid availability list [length 8760*20]
                 TBO = int(round(samples_TBO[ii]))
                 OD = int(round(samples_OD[ii]))
-                grid.extend([ii for ii in np.ones(TBO)])
-                grid.extend([ii for ii in np.zeros(OD)])
-                if len(grid) >= grid_lifetime * 8760:
-                    for ii in range(len(grid)-grid_lifetime * 8760):
+                grid.extend([ii for ii in np.ones(TBO*N_Time_Steps)])
+                grid.extend([ii for ii in np.zeros(OD*N_Time_Steps)])
+                if len(grid) >= grid_lifetime * 8760 * N_Time_Steps:
+                    for ii in range(len(grid)-grid_lifetime * 8760 * N_Time_Steps):
                         grid.pop(-ii)
                     break
            
@@ -131,7 +134,7 @@ def grid_availability(average_n_outages, average_outage_duration, project_lifeti
         fig6.savefig('Results/Plots/Samples distribution (OD).'+PlotFormat, dpi=PlotResolution, bbox_inches='tight')
         '''
                 
-        grid_matrix = np.ones((8760, grid_lifetime))
+        grid_matrix = np.ones((8760 * N_Time_Steps, grid_lifetime))
         year_count = 0
         ff = 0
         for ii in range(len(grid)):
@@ -139,22 +142,28 @@ def grid_availability(average_n_outages, average_outage_duration, project_lifeti
                 break
             grid_matrix[ff,year_count] = grid[ii]
             ff = ff + 1
-            if ff == 8759:
+            if ff == 8759 * N_Time_Steps:
                 year_count = year_count +1
                 ff = 0
         
-        grid_availability_lifetime = pd.concat([pd.DataFrame(np.zeros((8760,project_lifetime-grid_lifetime))), pd.DataFrame(grid_matrix)], axis = 1)
+        grid_availability_lifetime = pd.concat([pd.DataFrame(np.zeros((8760 * N_Time_Steps,project_lifetime-grid_lifetime))), pd.DataFrame(grid_matrix)], axis = 1)
         grid_availability_lifetime = grid_availability_lifetime.set_axis(range(1,project_lifetime+1), axis=1, inplace=False)
-    '''
+    
     fig7 = plt.figure(dpi=1000)
     plt.plot(range(len(grid_matrix[:,0])), grid_matrix[:,0] , 'b.-', linewidth=0.1, markersize = 0.5)   
     plt.xlabel('Time [h]',fontsize=10)
     plt.title('Grid availability (for 1st year of grid connection)',fontsize=10) 
     fig7.savefig('Results/Plots/Grid availability (for 1st year of grid connection).'+PlotFormat, dpi=PlotResolution, bbox_inches='tight') 
-    '''
+    
     
     print("Calculation of Grid Availability Matrix for " + str(grid_lifetime) + " years of grid connection completed" )
-    grid_availability_lifetime.to_excel("Inputs/Grid_availability.xlsx")
+    filename = "Inputs/Generation.xlsx"
+    book = load_workbook(filename)
+    writer = pd.ExcelWriter(filename, engine='openpyxl') 
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    grid_availability_lifetime.to_excel(writer, sheet_name = 'Grid Availability', index=False, header = True, startrow = 0, startcol = 0)
+    writer.save()
     return 
     
     

@@ -1,48 +1,94 @@
-"""
-MicroGridsPy - Multi-year capacity-expansion (MYCE)
+"Module for Pyomo variables and parameters definition"
 
-Linear Programming framework for microgrids least-cost sizing,
-able to account for time-variable load demand evolution and capacity expansion.
+from pyomo.environ import Param, RangeSet, NonNegativeReals, Var, Set, Reals, Binary 
+from Initialize import * # Import library with initialitation functions for the parameters
 
-Authors: 
-    Giulia Guidicini   - Department of Energy, Politecnico di Milano 
-    Lorenzo Rinaldi    - Department of Energy, Politecnico di Milano
-    Nicolò Stevanato   - Department of Energy, Politecnico di Milano / Fondazione Eni Enrico Mattei
-    Francesco Lombardi - Department of Energy, Politecnico di Milano
-    Emanuela Colombo   - Department of Energy, Politecnico di Milano
-Based on the original model by:
-    Sergio Balderrama  - Department of Mechanical and Aerospace Engineering, University of Liège / San Simon University, Centro Universitario de Investigacion en Energia
-    Sylvain Quoilin    - Department of Mechanical Engineering Technology, KU Leuven
-"""
-
-
-from pyomo.environ import Param, RangeSet, NonNegativeReals, Var, Set, Reals 
-from Initialize import * # Import library with initialitation funtions for the parameters
-
-
-def Model_Creation(model, Renewable_Penetration,Battery_Independence):
+def Model_Creation(model):
 
 #%% PARAMETERS  
 
+    "RES parameters"
+    
+    model.base_URL= Param()
+    model.loc_id = Param()
+    model.parameters_1 = Param()			
+    model.parameters_2 = Param()			
+    model.parameters_3 = Param() 				
+    model.date_start =  Param() 						
+    model.date_end =  Param()						
+    model.community = Param() 			
+    model.temp_res_1 = Param()						
+    model.temp_res_2 = Param()							
+    model.output_format = Param()					
+    model.user = Param() 						
+    model.lat = Param() 						
+    model.lon = Param() 							
+    model.time_zone = Param()								
+    model.nom_power = Param()						
+    model.tilt = Param()								   
+    model.azim = Param()								   
+    model.ro_ground = Param()						
+    model.k_T = Param()							
+    model.NMOT = Param()								   
+    model.T_NMOT = Param()						
+    model.G_NMOT = Param()							
+    model.turbine_type = Param()							
+    model.turbine_model = Param()				 	
+    model.drivetrain_efficiency = Param()             			
+        
+    "Demand parameters"
+    
+    model.demand_growth = Param() 							
+    model.cooling_period = Param() 							
+    model.h_tier1 = Param()  								
+    model.h_tier2 = Param()  							
+    model.h_tier3 = Param()  							
+    model.h_tier4 = Param() 								
+    model.h_tier5 = Param()  								
+    model.schools = Param()  							
+    model.hospital_1 = Param()  							
+    model.hospital_2 = Param()  							
+    model.hospital_3 = Param()  							
+    model.hospital_4 = Param()  						
+    model.hospital_5 = Param()					
+      
     "Project parameters"
-    model.Periods         = Param(within=NonNegativeReals)                          # Number of periods of analysis of the energy variables
+    model.Periods         = Param(within=NonNegativeReals,
+                                  initialize=Initialize_Periods)                          # Number of periods of analysis of the energy variables
     model.Years           = Param(within=NonNegativeReals)                          # Number of years of the project
     model.Step_Duration   = Param(within=NonNegativeReals)
     model.Min_Last_Step_Duration = Param(within=NonNegativeReals)
-    model.Delta_Time      = Param(within=NonNegativeReals)                          # Time step in hours
+    model.Delta_Time      = Param(within=NonNegativeReals,
+                                  initialize=Initialize_Delta_Time)                          # Time step in hours
+    model.Classes         = Param(within=NonNegativeReals)  
     model.StartDate       = Param()                                                 # Start date of the analisis
-    model.Scenarios       = Param(within=NonNegativeReals) 
-    model.Discount_Rate   = Param(within=NonNegativeReals)                          # Discount rate of the project in %
-    model.Investment_Cost_Limit = Param(within=NonNegativeReals)
-    model.Steps_Number = Param(initialize = Initialize_Upgrades_Number)
-    model.RES_Sources     = Param(within=NonNegativeReals)
-    model.Generator_Types = Param(within=NonNegativeReals)
-    model.Grid_Connection = Param(within=NonNegativeReals)
-    model.Grid_Availability_Simulation = Param(within=NonNegativeReals)
-    model.Year_Grid_Connection = Param(within=NonNegativeReals)                     
-    model.RE_Supply_Calculation = Param(within=NonNegativeReals)
-    model.Demand_Profile_Generation = Param(within=NonNegativeReals)
-    
+    model.Scenarios                         = Param(within=NonNegativeReals) 
+    model.Discount_Rate                     = Param(within=NonNegativeReals)                          # Discount rate of the project in %
+    model.Investment_Cost_Limit             = Param(within=NonNegativeReals)
+    model.Steps_Number                      = Param(initialize = Initialize_Upgrades_Number)
+    model.RES_Sources                       = Param(within=NonNegativeReals)
+    model.Generator_Types                   = Param(within=NonNegativeReals)   
+    model.Year_Grid_Connection              = Param(within=NonNegativeReals) 
+    model.Optimization_Goal                 = Param(within=NonNegativeReals,
+                                                    initialize=Initialize_Optimization_Goal)
+    model.Multiobjective_Optimization       = Param(within=NonNegativeReals,
+                                              initialize=Initialize_Multiobjective_Optimization)
+    model.Minute_Resolution                = Param(within=NonNegativeReals) 
+    model.MILP_Formulation                  = Param(within=NonNegativeReals,
+                                                    initialize=MILP_Formulation)
+    model.Greenfield_Investment = Param(within=NonNegativeReals,
+                                        initialize=Initialize_Greenfield_Investment)
+    model.Renewable_Penetration = Param(within=NonNegativeReals,
+                                        initialize=Initialize_Renewable_Penetration) 
+    model.RE_Supply_Calculation = Param(within=NonNegativeReals) 
+    model.Demand_Profile_Generation = Param(within=NonNegativeReals) 
+    model.Grid_Connection = Param(within=NonNegativeReals) 
+    model.Grid_Availability_Simulation = Param(within=NonNegativeReals) 
+    model.Grid_Connection_Type = Param(within=NonNegativeReals) 
+    model.Plot_Max_Cost        = Param(within=NonNegativeReals,
+                                       initialize=Initialize_Plot_Max_Cost) 
+                
+
     "Sets"
     model.periods = RangeSet(1, model.Periods)                                      # Creation of a set from 1 to the number of periods in each year
     model.years = RangeSet(1, model.Years)                                          # Creation of a set from 1 to the number of years of the project
@@ -50,11 +96,14 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
     model.renewable_sources = RangeSet(1, model.RES_Sources)                        # Creation of a set from 1 to the number of RES technologies to analized
     model.generator_types = RangeSet(1, model.Generator_Types)                      # Creation of a set from 1 to the number of generators types to analized
     model.steps = RangeSet(1, model.Steps_Number)                                   # Creation of a set from 1 to the number of investment decision steps
-    model.years_steps = Set(dimen = 2, initialize=Initialize_YearUpgrade_Tuples)    # 2D set of tuples: it associates each year to the corresponding investment decision step
-    model.years_grid_connection = RangeSet(model.Year_Grid_Connection,model.Years)  # Creation of a set from year of grid connection to last year
+    model.years_steps = Set(dimen = 2, 
+                            initialize=Initialize_YearUpgrade_Tuples)    # 2D set of tuples: it associates each year to the corresponding investment decision step
+    model.years_grid_connection = RangeSet(model.Year_Grid_Connection,
+                                           model.Years)  # Creation of a set from year of grid connection to last year
     model.Scenario_Weight = Param(model.scenarios, 
                                   within=NonNegativeReals) 
-    
+    model.classes = RangeSet(1, model.Classes)      # Creation of a set from 1 to the number of classes of the thermal part
+
     "Parameters of RES" 
     model.RES_Names                    = Param(model.renewable_sources)               # RES names
     model.RES_Nominal_Capacity         = Param(model.renewable_sources,
@@ -77,8 +126,18 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
                                               model.periods, 
                                               within=NonNegativeReals, 
                                               initialize=Initialize_RES_Energy)      # Energy production of a RES in Wh
-    if Renewable_Penetration > 0:
-        model.Renewable_Penetration = Renewable_Penetration
+    
+    "Parameters of the solar collector"
+    model.SC_Nominal_Capacity = Param(within=NonNegativeReals)     # Nominal capacity of the SC in kW/unit
+    model.SC_Lifetime         = Param(within=NonNegativeReals)
+    model.SC_Specific_Investment_Cost = Param(within=NonNegativeReals)    # Investment cost of SC unit in USD/kW
+    model.SC_Specific_OM_Cost = Param(within=NonNegativeReals)     # % of the total investment spent in operation and management of SC unit in each period                                             
+    model.SC_Unit_Energy_Production = Param(model.scenarios,
+                                            model.classes, 
+                                            model.periods,
+                                            within=NonNegativeReals,
+                                            initialize=Initialize_SC_Energy) # Energy production of a SC unit in W    
+
     
     "Parameters of the battery bank"
     model.Battery_Specific_Investment_Cost = Param(within=NonNegativeReals)                                     # Specific investment cost of the battery bank [USD/Wh]
@@ -95,11 +154,34 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
     model.Battery_Initial_SOC = Param(within=NonNegativeReals)
     model.Battery_capacity    = Param(within=NonNegativeReals)
     model.BESS_unit_CO2_emission = Param(within=NonNegativeReals)
-    if  Battery_Independence > 0:
-        model.Battery_Independence = Battery_Independence
-        model.Battery_Min_Capacity = Param(model.steps, 
-                                           initialize=Initialize_Battery_Minimum_Capacity)
+    model.Battery_Independence  =   Param(within=NonNegativeReals,
+                                          initialize=Initialize_Battery_Independence)
+    model.Battery_Min_Capacity = Param(model.steps, 
+                                       initialize=Initialize_Battery_Minimum_Capacity)
+    model.BESS_Large_Constant = Param(within=NonNegativeReals,
+                                      initialize = 10^6)
+    "Parameters of the tank"
+    model.Tank_Efficiency = Param()                  # Efficiency of the tank in %
+    model.Tank_Depth_of_Discharge = Param()          # Depth of discharge of the tank in %
+    model.Tank_Maximum_Discharge_Time = Param(within=NonNegativeReals)        # Maximum time of charge of the tank in hours
+    model.Tank_Lifetime               = Param(within=NonNegativeReals)
+    model.Tank_Specific_Investment_Cost = Param(within=NonNegativeReals)             # Investment cost of tank in USD/kWh
+    model.Tank_Specific_OM_Cost = Param(within=NonNegativeReals)              # % of the total investment spend in operation and management of tank unit in each period
 
+    "Parameters of the boilers"
+    model.Boiler_Efficiency = Param()          # Boiler efficiency in %
+    model.Lower_Heating_Value_NG = Param()     # Lower heating value of the natural gas in kWh/L
+    model.NG_Unitary_Cost = Param(within=NonNegativeReals)          # Cost of natural gas in USD/L
+    model.Boiler_Lifetime = Param(within=NonNegativeReals)
+    model.Boiler_Specific_Investment_Cost = Param(within=NonNegativeReals) # Investment cost of the NG Boiler in USD/kW
+    model.Boiler_Specific_OM_Cost = Param (within=NonNegativeReals) # % of the total investment spent in operation and management of boiler in each period
+
+    "Parameters of the electric resistance"
+    model.Electric_Resistance_Efficiency = Param()                               # Electric resistance efficiency in %
+    model.Electric_Resistance_Lifetime   = Param(within=NonNegativeReals)
+    model.Electric_Resistance_Specific_Investment_Cost = Param(within=NonNegativeReals) # Investment cost of the electric resistance in USD/kW
+    model.Electric_Resistance_Specific_OM_Cost = Param(within=NonNegativeReals)  # % of the total investment spent in operation and management of electric resistance in each period
+    
     "Parameters of the genset"
     model.Generator_Names             = Param(model.generator_types)                # Generators names
     model.Generator_Efficiency        = Param(model.generator_types,
@@ -127,7 +209,7 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
                                               model.years, 
                                               model.generator_types,
                                               initialize=Initialize_Generator_Marginal_Cost)   
-    "Parameters of the National Grid" ####
+    "Parameters of the National Grid"
     model.Grid_Sold_El_Price           = Param(within=NonNegativeReals)
     model.Grid_Purchased_El_Price      = Param(within=NonNegativeReals)
     model.Grid_Lifetime                = Param(within=NonNegativeReals)
@@ -141,20 +223,28 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
                                                initialize = Initialize_Grid_Availability)
     model.Grid_Average_Number_Outages  = Param(within=NonNegativeReals) 
     model.Grid_Average_Outage_Duration = Param(within=NonNegativeReals)                
-    model.Grid_Connection_Type         = Param(within=NonNegativeReals)
-    model.National_Grid_Specific_CO2_emissions = Param(within=NonNegativeReals)
-    model.National_Grid_Investment_Cost = Param(within=NonNegativeReals, 
-                                                initialize=Initialize_National_Grid_Inv_Cost)
-    model.National_Grid_OM_Cost = Param(within=NonNegativeReals, 
-                                                initialize=Initialize_National_Grid_OM_Cost)
+    model.National_Grid_Specific_CO2_emissions = Param(within=NonNegativeReals)  
+    
+ 
     "Parameters of the electricity balance"                  
-    model.Energy_Demand           = Param(model.scenarios, 
-                                          model.years, 
-                                          model.periods, 
-                                          initialize=Initialize_Demand)             # Energy Energy_Demand in W 
-    model.Lost_Load_Fraction      = Param(within=NonNegativeReals)                  # Lost load maxiumum admittable fraction in %
-    model.Lost_Load_Specific_Cost = Param(within=NonNegativeReals)                  # Value of lost load in USD/Wh 
-
+    model.Electric_Energy_Demand           = Param(model.scenarios, 
+                                                    model.years, 
+                                                    model.periods, 
+                                                    initialize=Initialize_Electric_Demand)             # Energy Energy_Demand in W 
+    model.Lost_Load_EE_Fraction      = Param(within=NonNegativeReals)                  # Lost load maxiumum admittable fraction in %
+    model.Lost_Load_EE_Specific_Cost = Param(within=NonNegativeReals)                  # Value of lost load in USD/Wh 
+    
+    model.Thermal_Energy_Demand = Param(model.scenarios,
+                                        model.years,
+                                        model.classes,
+                                        model.periods,
+                                        initialize=Initialize_Thermal_Demand) # Thermal Energy Demand in kW 
+    model.Lost_Load_Th_Fraction = Param(within=NonNegativeReals)      # Fraction of tolerated lost load in % of the total demand
+    model.Lost_Load_Th_Specific_Cost = Param(within=NonNegativeReals)       # Value of lost load in USD/kWh
+    
+    model.Large_Constant = Param(within=NonNegativeReals,
+                                      initialize = 10**6)
+    
     "Parameters of the plot"
     model.RES_Colors        = Param(model.renewable_sources)                        # HEX color codes for RES
     model.Battery_Color     = Param()                                               # HEX color codes for Battery bank
@@ -176,6 +266,16 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
                                       model.periods,
                                       within=NonNegativeReals)                      # Energy generated by the RES sistem in Wh
     model.RES_emission          = Var(within=NonNegativeReals)
+    
+    "Variables associated to the solar collectors"
+    model.SC_Units = Var(model.steps,
+                         model.classes,
+                         within=NonNegativeReals)                                            # Number of units of SC
+    model.SC_Energy_Production = Var(model.scenarios, 
+                                     model.years,
+                                     model.classes, 
+                                     model.periods,
+                                     within=NonNegativeReals) # Total energy generated for the SC system in kWh
 
     "Variables associated to the battery bank"
     model.Battery_Nominal_Capacity        = Var(model.steps, 
@@ -202,6 +302,33 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
     model.Battery_Replacement_Cost_NonAct = Var(model.scenarios,
                                                 within=NonNegativeReals)
     model.BESS_emission                   = Var(within=NonNegativeReals)
+    
+    model.Single_Flow_BESS                     = Var(model.scenarios, 
+                                                model.years, 
+                                                model.periods,
+                                                within = Binary)
+    
+    "Variables associated to the tank"
+    model.Tank_Nominal_Capacity = Var(model.steps,
+                                      model.classes, 
+                                      within=NonNegativeReals)                                # Capacity of the tank in kWh
+    model.Tank_Outflow = Var(model.scenarios,
+                             model.years,
+                             model.classes, 
+                             model.periods, 
+                             within=NonNegativeReals)          # Tank outflow in kWh
+    model.Tank_Inflow = Var(model.scenarios,
+                            model.years,
+                            model.classes, 
+                            model.periods, 
+                            within=NonNegativeReals)           # Tank inflow energy in kWh
+    model.Tank_State_of_Charge = Var(model.scenarios, 
+                                     model.years,
+                                     model.classes, 
+                                     model.periods, 
+                                     within=NonNegativeReals)  # State of Charge of the tank in kWh
+    model.Maximum_Tank_Discharge_Power = Var(model.classes, 
+                                             within=NonNegativeReals)                         # Maximum discharge power in kW        
 
     "Variables associated to the diesel generator"
     model.Generator_Nominal_Capacity  = Var(model.steps, 
@@ -250,39 +377,101 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
                                                 within=NonNegativeReals)    
     model.Scenario_GRID_emission      = Var(model.scenarios,
                                             within=NonNegativeReals)
+    
+    model.Single_Flow_Grid            = Var(model.scenarios,
+                                               model.years,
+                                               model.periods, 
+                                               within=Binary)  
+    "Variables associated to the boilers"
+    model.Boiler_Nominal_Capacity = Var(model.steps,
+                                        model.classes, 
+                                        within=NonNegativeReals)                      # Capacity of the boiler in kWh
+    model.NG_Consumption = Var(model.scenarios,
+                               model.years,
+                               model.classes, 
+                               model.periods,
+                               within=NonNegativeReals) # Natural Gas consumed to produce thermal energy in Kg (considering Liquified Natural Gas)
+    model.Boiler_Energy_Production = Var(model.scenarios, 
+                                         model.years,
+                                         model.classes, 
+                                         model.periods,
+                                         within=NonNegativeReals) # Energy generated by the boiler 
+    model.Total_NG_Cost_Act = Var(model.scenarios,
+                              model.classes, 
+                              within=NonNegativeReals) 
+    model.Total_NG_Cost_NonAct = Var(model.scenarios,
+                                     model.classes, 
+                                     within=NonNegativeReals) 
+
+    "Variables associated to the electric resistance"
+    model.Electric_Resistance_Nominal_Power = Var(model.steps,
+                                                  model.classes,
+                                                  model.steps, 
+                                                  within=NonNegativeReals)    # Nominal power of the electric resistance in W
+    model.Electric_Resistance_Energy_Consumption = Var(model.scenarios,
+                                                       model.years,
+                                                       model.classes, 
+                                                       model.periods, 
+                                                       within=NonNegativeReals) # Energy consumed by the electric resistance in each class in Wh 
+    model.Electric_Resistance_Energy_Production = Var(model.scenarios,
+                                                      model.years,
+                                                      model.classes,
+                                                      model.periods, 
+                                                      within=NonNegativeReals)  # Energy generated by the electric resistance in each class in Wh 
+    model.Tot_Electric_Resistance_Energy_Production = Var(model.scenarios,
+                                                          model.years,
+                                                          model.periods, 
+                                                          within=NonNegativeReals)            # Total energy generated by the electric resistance in Wh 
+
     "Variables associated to the energy balance"
-    model.Lost_Load             = Var(model.scenarios, 
+    model.Lost_Load_EE             = Var(model.scenarios, 
                                       model.years, 
                                       model.periods, 
                                       within=NonNegativeReals)                      # Energy not supplied by the system kWh
-    model.Energy_Curtailment    = Var(model.scenarios,
+    model.Lost_Load_Th             = Var(model.scenarios,
+                                         model.years,
+                                         model.classes,
+                                         model.periods, 
+                                         within=NonNegativeReals) # Energy not suply by the system kWh
+    model.Electric_Energy_Curtailment  = Var(model.scenarios,
                                       model.years,
                                       model.periods, 
                                       within=NonNegativeReals)                      # Curtailment of RES in kWh
-    model.Scenario_Lost_Load_Cost_Act    = Var(model.scenarios, 
+    model.Thermal_Energy_Curtailment = Var(model.scenario,
+                                           model.years,
+                                           model.classes,
+                                           model.periods,
+                                           within=NonNegativeReals)
+    model.Scenario_Lost_Load_Cost_Act_EE    = Var(model.scenarios, 
                                                within=NonNegativeReals) 
-    model.Scenario_Lost_Load_Cost_NonAct = Var(model.scenarios,
+    model.Scenario_Lost_Load_Cost_NonAct_EE = Var(model.scenarios,
                                                within=NonNegativeReals)    
+    model.Scenario_Lost_Load_Cost_Act_Th = Var(model.scenarios,
+                                               model.classes,
+                                               within=NonNegativeReals)
+    model.Scenario_Lost_Load_Cost_NonAct_Th = Var(model.scenarios,
+                                                  model.classes,
+                                                  within=NonNegativeReals) 
+
+    
     
 
     "Variables associated to the project"
     model.Net_Present_Cost                    = Var(within=Reals)
     model.Scenario_Net_Present_Cost           = Var(model.scenarios, 
                                                     within=Reals) 
-    model.Total_Variable_Cost                 = Var(within=NonNegativeReals)
+    model.Total_Variable_Cost                 = Var(within=Reals)
     model.CO2_emission                        = Var(within=NonNegativeReals)
     model.Scenario_CO2_emission               = Var(model.scenarios, 
                                                     within=NonNegativeReals)
     model.Investment_Cost                     = Var(within=NonNegativeReals)
-    model.Salvage_Value                       = Var(within=NonNegativeReals)   
-    model.Total_Variable_Cost_Act             = Var(within=NonNegativeReals) 
-    model.Operation_Maintenance_Cost_Act      = Var(within=NonNegativeReals)
-    model.Operation_Maintenance_Cost_NonAct   = Var(within=NonNegativeReals)
+    model.Salvage_Value                       = Var(within=Reals)   
+    model.Total_Variable_Cost_Act             = Var(within=Reals) 
+    model.Operation_Maintenance_Cost_Act      = Var(within=Reals)
+    model.Operation_Maintenance_Cost_NonAct   = Var(within=Reals)
     model.Total_Scenario_Variable_Cost_Act    = Var(model.scenarios, 
                                                     within=Reals) 
     model.Total_Scenario_Variable_Cost_NonAct = Var(model.scenarios, 
-                                                    within=NonNegativeReals) 
-    #model.NPC                                 = Var()
-    #model.CO2                                 = Var()
-        
+                                                    within=Reals) 
+
 
