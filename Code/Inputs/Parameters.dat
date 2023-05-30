@@ -117,13 +117,17 @@ param: Maximum_Battery_Discharge_Time := 5;                   # Maximum time to 
 param: Maximum_Battery_Charge_Time := 5;                      # Maximum time to charge the battery bank [h]
 param: Battery_Cycles := 3000;                                # Maximum number of cycles before degradation of the battery [-]  
 param: Battery_Initial_SOC := 1;                              # Battery initial state of charge [%]
-param: Battery_capacity := 30000;                             # Existing Battery capacity [Wh]
+param: Battery_Energy_Capacity := 30000;                             # Existing Battery capacity [Wh]
+param: Battery_Technology := "Lithium LFP";               # Battery technology (Lithium LFP, Lithium NMC or Lead Acid)
+param: Battery_Initial_SOH := 100;                        # Battery initial State of Health [%]            
+param: Battery_Energy = 1000;                             # Energy capacity of the battery [Wh]
+
 param: BESS_unit_CO2_emission := 0;
 
 param: Generator_Types := 1;                                # Number of different types of gensets 
 param: Generator_Names :=                                   # Generator names
 1      'Diesel Genset';
-param: Generator_Efficiency :=                              # Average generator efficiency of each generator type [%]
+param: Generator_Efficiency :=                              # Average generator efficiency of each generator type [-]
 1      0.28;                                                   
 param: Generator_Specific_Investment_Cost :=                # Specific investment cost for each generator type [USD/W]
 1      0.5;

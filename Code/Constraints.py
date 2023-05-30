@@ -356,6 +356,10 @@ class Constraints_Greenfield():
             return model.Battery_Nominal_Capacity[ut] >= model.Battery_Nominal_Capacity[ut-1]
         elif ut == 1:
             return model.Battery_Nominal_Capacity[ut] == model.Battery_Nominal_Capacity[ut]
+        
+    def Battery_Degradation(model,s,yt,ut,t):
+        Battery_Energy_Exchange = model.Battery_Outflow[s,yt,t] + model.Battery_Inflow[s,yt,t]
+        model.Battery_New_Capacity[s,yt,t] = model.Battery_New_Capacity[s,yt,t-1]-Battery_Coefficients(T_amb, n_years)[0][t]*Battery_Energy*Battery_Units-Beta[i]*Battery_Energy_Exchange[i] #####
     
     def Battery_Single_Flow_Discharge(model,s,yt,ut,t):
         return   model.Battery_Outflow[s,yt,t] <= model.Single_Flow_BESS[s,yt,t]*model.Large_Constant

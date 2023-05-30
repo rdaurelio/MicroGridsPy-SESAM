@@ -67,6 +67,12 @@ for i in range(len(Data_import)):
         Grid_Availability_Simulation = int((re.findall('\d+',Data_import[i])[0]))
     if "param: Year_Grid_Connection " in Data_import[i]:      
         year_grid_connection = int((re.findall('\d+',Data_import[i])[0]))
+    if "param: Battery_Energy_Capacity " in Data_import[i]:      
+        Battery_Energy_Capacity = int((re.findall('\d+',Data_import[i])[0]))
+    if "param: Battery_Technology " in Data_import[i]:      
+        Battery_Type = int((re.findall('\d+',Data_import[i])[0])) 
+    if "param: Battery_Depth_of_Discharge " in Data_import[i]:      
+        Battery_DoD = int((re.findall('\d+',Data_import[i])[0]))    
         
 scenario = [i for i in range(1,n_scenarios+1)]
 year = [i for i in range(1,n_years+1)]
@@ -111,8 +117,10 @@ def Initialize_Renewable_Penetration(model):
 
 if RE_Supply_Calculation:
    Renewable_Energy = RE_supply().drop([None], axis=1).set_index([pd.Index([ii for ii in range(1,8761)])], inplace = False)
+   T_amb = list(Renewable_Energy.loc[:, "Ambient Temperature"])
 else:
    Renewable_Energy = pd.read_excel('Inputs/Generation.xlsx', sheetname = "Renewable Energy") 
+   T_amb = list(Renewable_Energy.loc[:, "Ambient Temperature"])
 if Demand_Profile_Generation:
    Demand = demand_generation() 
 else:
@@ -146,10 +154,23 @@ def Initialize_RES_Energy(model,s,r,t):
     return float(Renewable_Energy[column][t])   
 
 
+def Battery_Coefficients(T_amb, n_years):
+    T_amb = [T_amb for ii in range(n_years)]
+    Alpha = []
+    Beta = []
+    for x in T_amb/10:
+        if Battery_Type=='LFP': # equations now only for 80% DoD
+            Alpha.append((3.181033*10**-10)*(x**3) + (1.434107*10**-9)*(x**2) + (1.0011718*10**-8)*(x) + (1.99577225*10**-8)) #change
+            Beta.append((3.616963*10**-7)*(x**3) - (8.879622*10**-7)*(x**2) + (4.917222*10**-6)*(x) + (6.473526*10**-6))
+    return Alpha, Beta
+
+
+
+'''
 def Initialize_Battery_Unit_Repl_Cost(model):
     Unitary_Battery_Cost = model.Battery_Specific_Investment_Cost - model.Battery_Specific_Electronic_Investment_Cost
     return Unitary_Battery_Cost/(model.Battery_Cycles*2*(1-model.Battery_Depth_of_Discharge))
-      
+'''     
 
 def Initialize_Battery_Minimum_Capacity(model,ut): 
     if model.Battery_Independence == 0: 
