@@ -18,7 +18,6 @@ Main features:
 Possible features:
 
 - Two-stage stochastic optimization.
-- LP or MILP optimization. 
 - Unit commitment of generation sources with MILP formulation.
 - Partal Load operation of diesel genset with MILP formulation.
 - Optimization at 1 minute time-step (suited for coupling with RAMP load profiles).
