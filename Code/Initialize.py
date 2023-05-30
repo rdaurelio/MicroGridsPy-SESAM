@@ -42,7 +42,7 @@ for i in range(len(Data_import)):
     if "param: Battery_Independence" in Data_import[i]:      
         Battery_Independence = int((re.findall('\d+',Data_import[i])[0]))
     if "param: Renewable_Penetration" in Data_import[i]:      
-        Renewable_Penetration = int((re.findall('\d+',Data_import[i])[0]))
+        Renewable_Penetration = float((re.findall("\d+\.\d+|\d+",Data_import[i])[0]))
     if "param: Greenfield_Investment" in Data_import[i]:      
         Greenfield_Investment = int((re.findall('\d+',Data_import[i])[0]))
     if "param: Multiobjective_Optimization" in Data_import[i]:      

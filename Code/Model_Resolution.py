@@ -21,15 +21,15 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
     Data_import = open(Data_file).readlines()
 
     for i in range(len(Data_import)):
-        if "param: Renewable_Penetration" in Data_import[i]:      
-            Renewable_Penetration = int((re.findall('\d+',Data_import[i])[0]))
+        if "param: Renewable_Penetration" in Data_import[i]:
+            Renewable_Penetration = float((re.findall("\d+\.\d+|\d+",Data_import[i])[0]))
         if "param: Battery_Independence" in Data_import[i]:      
             Battery_Independence = int((re.findall('\d+',Data_import[i])[0]))
         if "param: Greenfield_Investment" in Data_import[i]:  
             Greenfield_Investment = int((re.findall('\d+',Data_import[i])[0]))
         if "param: Multiobjective_Optimization" in Data_import[i]:      
             Multiobjective_Optimization = int((re.findall('\d+',Data_import[i])[0]))
-        if "param: Optimization_Goal" in Data_import[i]:      
+        if "param: Optimization_Goal" in Data_import[i]:
             Optimization_Goal = int((re.findall('\d+',Data_import[i])[0]))
         if "param: MILP_Formulation" in Data_import[i]:      
             MILP_Formulation = int((re.findall('\d+',Data_import[i])[0]))
@@ -138,7 +138,9 @@ def Model_Resolution(model, datapath="Inputs/Model_data.dat",options_string="mip
     model.ResMinStepUnits = Constraint(model.years_steps,
                                        model.renewable_sources, 
                                        rule=C.Renewables_Min_Step_Units)
+
     if Renewable_Penetration > 0:
+        print('ECCOMI STA FUNZIONANDO!')
         model.RenewableEnergyPenetration = Constraint(model.steps, 
                                                       rule=C.Renewable_Energy_Penetration)
 

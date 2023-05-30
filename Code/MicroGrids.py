@@ -27,7 +27,7 @@ PlotFormat = 'png'                   # Desired extension of the saved file (Vali
 PlotResolution = 400                 # Plot resolution in dpi (useful only for .png files, .svg and .pdf output a vector plot)
 '''
 PlotScenario1 = 1                    # Plot scenario
-PlotDate1 = '01/01/2025 00:00:00'    # Month-Day-Year. If devoid of meaning: Day-Month-Year
+PlotDate1 = '01/01/2042 00:00:00'    # Month-Day-Year. If devoid of meaning: Day-Month-Year
 PlotTime1 = 3                        # Number of days to be shown in the plot
 PlotFormat1 = 'png'                  # Desired extension of the saved file (Valid formats: png, svg, pdf)
 PlotResolution1 = 400                # Plot resolution in dpi (useful only for .png files, .svg and .pdf output a vector plot)
@@ -47,6 +47,7 @@ PlotResolution3 = 400                # Plot resolution in dpi (useful only for .
 DispatchPlot(instance,Time_Series,PlotScenario,PlotDate,PlotTime,PlotResolution,PlotFormat)
 '''
 DispatchPlot1(instance,TimeSeries,PlotScenario1,PlotDate1,PlotTime1,PlotResolution1,PlotFormat1)
+
 DispatchPlot2(instance,TimeSeries,PlotScenario2,PlotDate2,PlotTime2,PlotResolution2,PlotFormat2)
 DispatchPlot3(instance,TimeSeries,PlotScenario3,PlotDate3,PlotTime3,PlotResolution3,PlotFormat3)
 '''

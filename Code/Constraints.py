@@ -317,9 +317,9 @@ class Constraints_Greenfield():
                     for t in range(1,model.Periods+1):
                         foo.append((s,y,r,t))        
         E_gen = sum(model.Generator_Energy_Production[s,y,g,t]*model.Scenario_Weight[s]
-                    for s,y,g,t in Foo)    
+                    for s,y,g,t in Foo)
         E_ren = sum(model.RES_Energy_Production[s,y,r,t]*model.Scenario_Weight[s]
-                    for s,y,r,t in foo)        
+                    for s,y,r,t in foo)      
         return  (1 - model.Renewable_Penetration)*E_ren >= model.Renewable_Penetration*E_gen   
     
     def Renewables_Min_Step_Units(model,yt,ut,r):
