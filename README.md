@@ -3,7 +3,10 @@ MicroGridsPy - Version 2.0
 
 ### Description
 
-The MicroGridsPy model main objective is to provide an open-source alternative to the problem of sizing and dispatch of energy in micro-grids in isolated places. It’s written in python(pyomo) and use excel and text files as input and output data handling and visualisation.
+The tool main objective is to provide an open-source alternative to the problem of sizing and dispatch of energy in multi-energy systems, integrating a cold thermal energy demand and electrical demand in rural application,
+the model integrates reneawble sources with a backup system made of batteries and diesel generators to produce electricity and ice to be stored and dispatched.
+It’s written in python(pyomo) and use excel and text files as input and output data handling and visualization. It is an expansion of the existing Micro-Grids Py library, developed by S.Balderrama and S.Quoilin.
+
 
 Main features:
 
@@ -12,17 +15,7 @@ Main features:
     Possibility to optimize on NPC or operation costs.
     LCOE evaluation for the identified system.
     
-Possible features:
 
-    Two-stage stochastic optimization.
-    Multi-year evolving load demand and multi-step capacity expansion.
-    Possibility of connecting to the national grid.
-    Two-objective optimization (economic and environmental objective functions).
-    Brownfield optimization.
-    Built-in load archetypes for rural users.
-    Endogenous calculation of renewable energy sources production.
-	
- 
 ### Required libraries
 
 In the current repository under the Environments branch MAC OS and Windows environment made available.
