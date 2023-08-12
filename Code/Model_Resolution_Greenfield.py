@@ -82,6 +82,52 @@ def Model_Resolution_Greenfield(model, Optimization_Goal, MultiObjective_Optimiz
                                      model.periods, 
                                      rule=Energy_balance)
 
+
+#%% Coldchain balance
+    model.IceBalance    = Constraint(model.scenarios,
+                                     model.years_steps, 
+                                     model.periods, 
+                                     rule=Ice_balance)
+    model.Iceprod       = Constraint(model.scenarios,
+                                     model.years_steps,
+                                    model.periods,
+                                     rule=Ice_Prod)
+    model.TotIceProd    = Constraint(model.scenarios, 
+                                     model.years_steps, 
+                                     model.periods, 
+                                     rule=Tot_Ice_Prod)
+    model.MaxProduction = Constraint(model.scenarios, 
+                                     model.years_steps, 
+                                     model.periods, 
+                                     rule= Maximum_Consumption)
+#%%  Ice tank
+    model.TankStateOfCharge = Constraint(model.scenarios, 
+                                         model.years_steps,
+                                         model.periods,  
+                                         rule=Tank_State_of_Charge)    
+    model.MaximumTankCharge = Constraint(model.scenarios,
+                                         model.years_steps, 
+                                         model.periods,
+                                         rule=Maximum_Tank_Charge)    
+    model.MinimumTankCharge = Constraint(model.scenarios,
+                                         model.years_steps, 
+                                         model.periods,
+                                         rule=Minimum_Tank_Charge)    
+    model.MaxPowerTankCharge    = Constraint(model.steps, 
+                                                rule=Max_Power_Tank_Charge) 
+    model.MaxPowerTankDischarge = Constraint(model.steps,
+                                             rule=Max_Power_Tank_Discharge)   
+    model.MaxTankIn              = Constraint(model.scenarios,
+                                              model.years_steps, 
+                                              model.periods, 
+                                              rule = Max_Tank_in)
+    model.MaxTankOut       = Constraint(model.scenarios,
+                                        model.years_steps, 
+                                        model.periods,
+                                        rule=Max_Tank_out)
+    model.TankMinStepCapacity   = Constraint(model.years_steps, 
+                                                rule=Tank_Min_Step_Capacity)
+
     "Renewable Energy Sources constraints"
     model.RenewableEnergy = Constraint(model.scenarios,
                                        model.years_steps, 

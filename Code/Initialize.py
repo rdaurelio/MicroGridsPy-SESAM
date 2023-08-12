@@ -21,10 +21,12 @@ import re
 from RE_calculation import RE_supply
 from Demand import demand_generation
 from Grid_Availability import grid_availability
+import math
 
 #%% This section extracts the values of Scenarios, Periods, Years from data.dat and creates ranges for them
 Data_file = "Inputs/Model_data.dat"
 Data_import = open(Data_file).readlines()
+
 
 for i in range(len(Data_import)):
     if "param: Scenarios" in Data_import[i]:
@@ -51,6 +53,19 @@ for i in range(len(Data_import)):
         year_grid_connection = int((re.findall('\d+',Data_import[i])[0]))
     if "param: Grid_Connection_Type" in Data_import[i]:      
         grid_connection_type = ((Data_import[i][Data_import[i].index('=')+1:Data_import[i].index(';')]).replace(' ','')).replace("'","")
+    if "param: Year_Grid_Connection " in Data_import[i]:      
+        year_grid_connection = int((re.findall('\d+',Data_import[i])[0]))
+    if "param: COP_n" in Data_import[i]:
+        COP_n = float((re.findall('\d+\.*\d+',Data_import[i])[0]))
+    if "param: eta_nom" in Data_import[i]:
+        eta_nom = float((re.findall('\d+\.*\d+',Data_import[i])[0]))
+    if "param: eta_c" in Data_import[i]:
+        eta_c = float((re.findall('\d+\.*\d+',Data_import[i])[0]))
+    if "param: Tav" in Data_import[i]:
+        Tamb = int((re.findall('\d+\.*\d+',Data_import[i])[0]))
+    if "param: Tmin" in Data_import[i]:
+        nmin = int((re.findall('\d+',Data_import[i])[0]))
+
 
 scenario = [i for i in range(1,n_scenarios+1)]
 year = [i for i in range(1,n_years+1)]
@@ -111,7 +126,6 @@ if Demand_Profile_Generation:
    Demand = demand_generation(n_years) 
 else:
    Demand = pd.read_excel('Inputs/Demand.xlsx')
-       
 
 Energy_Demand_Series = pd.Series()
 for i in range(1,n_years*n_scenarios+1):
@@ -134,14 +148,142 @@ Energy_Demand_2.index = index_2
 def Initialize_Demand(model, s, y, t):
     return float(Energy_Demand[0][(s,y,t)])
 
+#%%Ice demand 
+Demand_ice =pd.read_excel('Inputs/Demand_ice.xlsx')
+Ice_Demand_Series = pd.Series()
+for i in range(1,n_years*n_scenarios+1):
+    dum = Demand_ice[i][:]
+    Ice_Demand_Series = pd.concat([Ice_Demand_Series,dum])
+Ice_Demand = pd.DataFrame(Ice_Demand_Series) 
+frame = [scenario,year,period]
+index = pd.MultiIndex.from_product(frame, names=['scenario','year','period'])
+Ice_Demand.index = index
+Ice_Demand_2 = pd.DataFrame()    
+for s in scenario:
+    Ice_Demand_Series_2 = pd.Series()
+    for y in year:
+        dum_2 = Demand_ice[(s-1)*n_years + y][:]
+        Ice_Demand_Series_2 = pd.concat([Ice_Demand_Series_2,dum_2])
+    Ice_Demand_2.loc[:,s] = Ice_Demand_Series_2
+index_2 = pd.RangeIndex(1,n_years*n_periods+1)
+Ice_Demand_2.index = index_2
+
+def Initialize_Ice_Demand(model, s, y, t):
+    return float(Ice_Demand[0][(s,y,t)])
+
+#%%
+T =pd.read_excel('Inputs/Tair.xlsx')
+Tair_Series = pd.Series()
+for i in range(1,n_years*n_scenarios+1):
+    dum = T[i][:]
+    Tair_Series = pd.concat([Tair_Series,dum])
+Tair = pd.DataFrame(Tair_Series) 
+frame = [scenario,year,period]
+index = pd.MultiIndex.from_product(frame, names=['scenario','year','period'])
+Tair.index = index
+Tair_2 = pd.DataFrame()    
+for s in scenario:
+    Tair_Series_2 = pd.Series()
+    for y in year:
+        dum_2 = T[(s-1)*n_years + y][:]
+        Tair_Series_2 = pd.concat([Tair_Series_2,dum_2])
+    Tair_2.loc[:,s] = Tair_Series_2
+index_2 = pd.RangeIndex(1,n_years*n_periods+1)
+Tair_2.index = index_2
+
+def Initialize_Tair(model, s, y, t):
+    return float(Tair[0][(s,y,t)])
+
+#%% T ground water
+
+Tgw = np.empty([n_periods])
+for i_day in range(n_periods):
+        Ti = Tamb -3*math.cos(((2*math.pi)/365)*(i_day-nmin))
+        r_inizio = i_day*24
+        r_fine = r_inizio+24
+        Tgw[r_inizio:r_fine] = Ti
+Tw1=pd.DataFrame(Tgw)
+frame = [period]
+index = pd.MultiIndex.from_product(frame, names=['period'])
+Tw1.index = index
+
+def Initialize_Tgw(model, t):
+    return float(Tw1[0][(t)])
+
+
+#%% COP VARIABILE
+
+Tair1=pd.read_excel('Inputs/Tair.xlsx')
+Tair1.values
+COP1=np.empty([n_periods])
+
+for i in range(n_periods):
+     COP1=COP_n-0.03*(Tair1-25)   
+COPod =pd.DataFrame(COP1)
+
+COP_Series = pd.Series()
+for i in range(1,n_years*n_scenarios+1):
+   dum = COPod[i][:]
+   COP_Series = pd.concat([COP_Series,dum])
+COP = pd.DataFrame(COP_Series) 
+frame = [scenario,year,period]
+index = pd.MultiIndex.from_product(frame, names=['scenario','year','period'])
+COP.index = index
+COP_2 = pd.DataFrame()    
+for s in scenario:
+    COP_Series_2 = pd.Series()
+    for y in year:
+        dum_2 = COPod[(s-1)*n_years + y][:]
+        COP_Series_2 = pd.concat([COP_Series_2,dum_2])
+    COP_2.loc[:,s] = COP_Series_2
+index_2 = pd.RangeIndex(1,n_years*n_periods+1)
+COP_2.index = index_2
+
+
+def Initialize_COP(model, s, y, t):
+    return float(COP[0][(s,y,t)])
+#%% thermal resistanece of the storage
+Tair1=pd.read_excel('Inputs/Tair.xlsx')
+Tair1.values
+eta_tank=np.empty([n_periods])
+
+for i in range(n_periods):
+     eta_tank=eta_nom-0.0004*(Tair1-25)     
+eta_tank_r =pd.DataFrame(eta_tank)
+#print(eta_tank) 
+#COP.to_csv(('Inputs/COP_n.csv'))
+#COPod =pd.read_excel('Inputs/COP.xlsx')
+eta_Series = pd.Series()
+for i in range(1,n_years*n_scenarios+1):
+   dum = eta_tank_r[i][:]
+   eta_Series = pd.concat([eta_Series,dum])
+eta_T = pd.DataFrame(eta_Series) 
+frame = [scenario,year,period]
+index = pd.MultiIndex.from_product(frame, names=['scenario','year','period'])
+eta_T.index = index
+eta_2 = pd.DataFrame()    
+for s in scenario:
+    eta_Series_2 = pd.Series()
+    for y in year:
+        dum_2 = eta_tank_r[(s-1)*n_years + y][:]
+        eta_Series_2 = pd.concat([eta_Series_2,dum_2])
+    eta_2.loc[:,s] = eta_Series_2
+index_2 = pd.RangeIndex(1,n_years*n_periods+1)
+eta_2.index = index_2
+
+
+def Initialize_Eta(model, s, y, t):
+    return float(eta_T[0][(s,y,t)])
+
+
+
+#%%
 
 def Initialize_RES_Energy(model,s,r,t):
     column = (s-1)*model.RES_Sources + r 
     return float(Renewable_Energy[column][t])   
 
 
-
-  
 def Initialize_Battery_Unit_Repl_Cost(model):
     Unitary_Battery_Cost = model.Battery_Specific_Investment_Cost - model.Battery_Specific_Electronic_Investment_Cost
     return Unitary_Battery_Cost/(model.Battery_Cycles*2*(1-model.Battery_Depth_of_Discharge))
@@ -182,6 +324,40 @@ def Initialize_Battery_Minimum_Capacity(model,ut):
     Available_Energy = sum(Period_Average_Energy[s]*model.Scenario_Weight[s] for s in model.scenarios) 
     
     return  Available_Energy/(1-model.Battery_Depth_of_Discharge)
+
+def Initialize_Tank_Minimum_Capacity(model,ut):   
+    Periods = model.Tank_Independence*24
+    Len =  int(model.Periods*model.Years/Periods)
+    Grouper = 1
+    index = 1
+    for i in range(1, Len+1):
+        for j in range(1,Periods+1):      
+            Ice_Demand_2.loc[index, 'Grouper'] = Grouper
+            index += 1      
+        Grouper += 1
+
+    upgrade_years_list = [1 for i in range(len(model.steps))]
+    
+    for u in range(1, len(model.steps)):
+        upgrade_years_list[u] =upgrade_years_list[u-1] + model.Step_Duration
+    if model.Steps_Number ==1:
+        Ice_Demand_Upgrade = Ice_Demand_2    
+    else:
+        if ut==1:
+            start = 0
+            Ice_Demand_Upgrade = Ice_Demand_2.loc[start : model.Periods*(upgrade_years_list[ut]-1), :]       
+        elif ut == len(model.steps):
+            start = model.Periods*(upgrade_years_list[ut-1] -1)+1
+            Ice_Demand_Upgrade = Ice_Demand_2.loc[start :, :]       
+        else:
+            start = model.Periods*(upgrade_years_list[ut-1] -1)+1
+            Ice_Demand_Upgrade = Ice_Demand_2.loc[start : model.Periods*(upgrade_years_list[ut]-1), :]
+    
+    Period_Ice = Ice_Demand_Upgrade.groupby(['Grouper']).sum()        
+    Period_Average_Ice= Period_Ice.mean()
+    Available_Ice = sum(Period_Average_Ice[s]*model.Scenario_Weight[s] for s in model.scenarios) 
+    
+    return  Available_Ice/(1-model.Tank_Depth_of_Discharge)
 
 #%% 
 def Initialize_Generator_Marginal_Cost(model,s,y,g):

@@ -20,7 +20,7 @@ from pyomo.environ import Param, RangeSet, NonNegativeReals, Var, Set, Reals
 from Initialize import * # Import library with initialitation funtions for the parameters
 
 
-def Model_Creation(model, Renewable_Penetration,Battery_Independence):
+def Model_Creation(model, Renewable_Penetration,Battery_Independence,Tank_Independence):
 
 #%% PARAMETERS  
 
@@ -42,6 +42,7 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
     model.Year_Grid_Connection = Param(within=NonNegativeReals)                     
     model.RE_Supply_Calculation = Param(within=NonNegativeReals)
     model.Demand_Profile_Generation = Param(within=NonNegativeReals)
+    
     
     "Sets"
     model.periods = RangeSet(1, model.Periods)                                      # Creation of a set from 1 to the number of periods in each year
@@ -81,20 +82,20 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
         model.Renewable_Penetration = Renewable_Penetration
     
     "Parameters of the battery bank"
-    model.Battery_Specific_Investment_Cost = Param(within=NonNegativeReals)                                     # Specific investment cost of the battery bank [USD/Wh]
+    model.Battery_Specific_Investment_Cost            = Param(within=NonNegativeReals)                                     # Specific investment cost of the battery bank [USD/Wh]
     model.Battery_Specific_Electronic_Investment_Cost = Param(within=NonNegativeReals)   # Specific investment cost of non-replaceable parts (electronics) of the battery bank [USD/Wh]
-    model.Battery_Specific_OM_Cost = Param(within=NonNegativeReals)                      # Percentage of the total investment spend in operation and management of batteries in each period in %
-    model.Battery_Discharge_Battery_Efficiency = Param(within=NonNegativeReals)                                 # Efficiency of the discharge of the battery in %
-    model.Battery_Charge_Battery_Efficiency    = Param(within=NonNegativeReals)                                 # Efficiency of the charge of the battery in  %
-    model.Battery_Depth_of_Discharge       = Param()                                     # Depth of discharge of the battery (Depth_of_Discharge) in %
-    model.Maximum_Battery_Discharge_Time   = Param(within=NonNegativeReals)              # Minimum time of charge of the battery in hours
-    model.Maximum_Battery_Charge_Time      = Param(within=NonNegativeReals)              # Maximum time of discharge of the battery in hours                     
-    model.Battery_Cycles                   = Param(within=NonNegativeReals)
-    model.Unitary_Battery_Replacement_Cost = Param(within=NonNegativeReals, 
-                                                   initialize=Initialize_Battery_Unit_Repl_Cost)
-    model.Battery_Initial_SOC = Param(within=NonNegativeReals)
-    model.Battery_capacity    = Param(within=NonNegativeReals)
-    model.BESS_unit_CO2_emission = Param(within=NonNegativeReals)
+    model.Battery_Specific_OM_Cost                    = Param(within=NonNegativeReals)                      # Percentage of the total investment spend in operation and management of batteries in each period in %
+    model.Battery_Discharge_Battery_Efficiency        = Param(within=NonNegativeReals)                                 # Efficiency of the discharge of the battery in %
+    model.Battery_Charge_Battery_Efficiency           = Param(within=NonNegativeReals)                                 # Efficiency of the charge of the battery in  %
+    model.Battery_Depth_of_Discharge                 = Param()                                     # Depth of discharge of the battery (Depth_of_Discharge) in %
+    model.Maximum_Battery_Discharge_Time            = Param(within=NonNegativeReals)              # Minimum time of charge of the battery in hours
+    model.Maximum_Battery_Charge_Time          = Param(within=NonNegativeReals)              # Maximum time of discharge of the battery in hours                     
+    model.Battery_Cycles                       = Param(within=NonNegativeReals)
+    model.Unitary_Battery_Replacement_Cost     = Param(within=NonNegativeReals, 
+                                                       initialize=Initialize_Battery_Unit_Repl_Cost)
+    model.Battery_Initial_SOC                  = Param(within=NonNegativeReals)
+    model.Battery_capacity                     = Param(within=NonNegativeReals)
+    model.BESS_unit_CO2_emission               = Param(within=NonNegativeReals)
     if  Battery_Independence > 0:
         model.Battery_Independence = Battery_Independence
         model.Battery_Min_Capacity = Param(model.steps, 
@@ -127,26 +128,26 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
                                               model.years, 
                                               model.generator_types,
                                               initialize=Initialize_Generator_Marginal_Cost)   
-    "Parameters of the National Grid" ####
-    model.Grid_Sold_El_Price           = Param(within=NonNegativeReals)
-    model.Grid_Purchased_El_Price      = Param(within=NonNegativeReals)
-    model.Grid_Lifetime                = Param(within=NonNegativeReals)
-    model.Grid_Distance                = Param(within=NonNegativeReals)
-    model.Grid_Connection_Cost         = Param(within=NonNegativeReals)
-    model.Grid_Maintenance_Cost        = Param(within=NonNegativeReals)
-    model.Maximum_Grid_Power           = Param(within=NonNegativeReals)
-    model.Grid_Availability            = Param(model.scenarios,
-                                               model.years,
-                                               model.periods,
-                                               initialize = Initialize_Grid_Availability)
-    model.Grid_Average_Number_Outages  = Param(within=NonNegativeReals) 
-    model.Grid_Average_Outage_Duration = Param(within=NonNegativeReals)                
-    model.Grid_Connection_Type         = Param(within=NonNegativeReals)
+    "Parameters of the National Grid" 
+    model.Grid_Sold_El_Price                  = Param(within=NonNegativeReals)
+    model.Grid_Purchased_El_Price             = Param(within=NonNegativeReals)
+    model.Grid_Lifetime                       = Param(within=NonNegativeReals)
+    model.Grid_Distance                       = Param(within=NonNegativeReals)
+    model.Grid_Connection_Cost                = Param(within=NonNegativeReals)
+    model.Grid_Maintenance_Cost               = Param(within=NonNegativeReals)
+    model.Maximum_Grid_Power                  = Param(within=NonNegativeReals)
+    model.Grid_Availability                   = Param(model.scenarios,
+                                                      model.years,
+                                                      model.periods,
+                                                      initialize = Initialize_Grid_Availability)
+    model.Grid_Average_Number_Outages          = Param(within=NonNegativeReals) 
+    model.Grid_Average_Outage_Duration         = Param(within=NonNegativeReals)                
+    model.Grid_Connection_Type                 = Param(within=NonNegativeReals)
     model.National_Grid_Specific_CO2_emissions = Param(within=NonNegativeReals)
-    model.National_Grid_Investment_Cost = Param(within=NonNegativeReals, 
-                                                initialize=Initialize_National_Grid_Inv_Cost)
-    model.National_Grid_OM_Cost = Param(within=NonNegativeReals, 
-                                                initialize=Initialize_National_Grid_OM_Cost)
+    model.National_Grid_Investment_Cost        = Param(within=NonNegativeReals, 
+                                                       initialize=Initialize_National_Grid_Inv_Cost)
+    model.National_Grid_OM_Cost                = Param(within=NonNegativeReals, 
+                                                       initialize=Initialize_National_Grid_OM_Cost)
     "Parameters of the electricity balance"                  
     model.Energy_Demand           = Param(model.scenarios, 
                                           model.years, 
@@ -155,9 +156,57 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
     model.Lost_Load_Fraction      = Param(within=NonNegativeReals)                  # Lost load maxiumum admittable fraction in %
     model.Lost_Load_Specific_Cost = Param(within=NonNegativeReals)                  # Value of lost load in USD/Wh 
 
+ 
+
+    "Parameters of the Ice balance"                  
+
+    model.Ice_Demand  =Param(model.scenarios,
+                             model.years,
+                             model.periods,
+                             initialize =Initialize_Ice_Demand)
+    model.Tair       = Param(model.scenarios,
+                             model.years,
+                             model.periods,
+                             initialize =Initialize_Tair)    
+    model.COP_n        =Param(within =NonNegativeReals)
+    model.COP        =  Param(model.scenarios,
+                             model.years,
+                             model.periods,
+                             initialize =Initialize_COP)
+    model.Tav        =Param(within= NonNegativeReals)
+    model.Tmin       =Param(within= NonNegativeReals)
+    model.eta_c      =Param(within= NonNegativeReals)                          # Efficiency of the tank in %
+    model.Tgw        =Param( model.periods,
+                             initialize =Initialize_Tgw )
+    model.eta_nom    =Param(within =NonNegativeReals)    
+    model.eta_T     = Param(model.scenarios,
+                             model.years,
+                             model.periods,
+                             initialize =Initialize_Eta )
+    
+    "Parameters of the tank"
+    model.eta_nom         =Param(within =NonNegativeReals)
+    model.Tank_Efficiency =Param(model.scenarios,
+                             model.years,
+                             model.periods,
+                             initialize =Initialize_Eta)     # Efficiency of the tank in %
+    model.Tank_Depth_of_Discharge     = Param()                                # Depth of discharge of the tank in %
+    model.Tank_Maximum_Discharge_Time = Param(within=NonNegativeReals)         # Maximum time of charge of the tank in hours
+    model.Tank_Maximum_Charge_Time    = Param(within=NonNegativeReals)
+    model.Tank_Specific_Investment_Cost      = Param(within=NonNegativeReals)         # Investment cost of tank in USD/kWh
+    model.Tank_Specific_OM_Cost       = Param(within=NonNegativeReals)         # % of the total investment spend in operation and management of tank unit in each period
+    model.Tank_Initial_SOC            = Param(within=NonNegativeReals)
+    if  Tank_Independence > 0:
+        model.Tank_Independence = Tank_Independence
+        model.Tank_Min_Capacity = Param(model.steps, 
+                                           initialize=Initialize_Tank_Minimum_Capacity)
+
+
+
     "Parameters of the plot"
     model.RES_Colors        = Param(model.renewable_sources)                        # HEX color codes for RES
     model.Battery_Color     = Param()                                               # HEX color codes for Battery bank
+    model.Tank_Color        =Param()                                                # HEX color codes for Ice tank
     model.Generator_Colors  = Param(model.generator_types)                          # HEX color codes for Generators
     model.Lost_Load_Color   = Param()                                               # HEX color codes for Lost load
     model.Curtailment_Color = Param()                                               # HEX color codes for Curtailment
@@ -265,6 +314,21 @@ def Model_Creation(model, Renewable_Penetration,Battery_Independence):
                                                within=NonNegativeReals)    
     
 
+    "Variables associated to the Ice balance"
+    model.Ice_Prod = Var(model.scenarios,model.years, model.periods, within=NonNegativeReals) 
+    model.Compressor_Energy_Consumption = Var(model.scenarios, model.years, model.periods, within=NonNegativeReals)
+    model.Compressor_Nominal_Power =Var(model.scenarios, within=NonNegativeReals)
+    model.Tot_Ice_Prod =Var(model.scenarios,model.years, model.periods, within=NonNegativeReals)
+   
+
+    "Variables associated to the Ice tank"
+    model.Tank_Nominal_Capacity        = Var(model.steps, within=NonNegativeReals)                       # Capacity of the tank in kWh
+    model.Tank_Outflow                 = Var(model.scenarios, model.years, model.periods, within=NonNegativeReals)      # Tank outflow in kWh
+    model.Tank_Inflow                  = Var(model.scenarios,model.years, model.periods, within=NonNegativeReals)      # Tank inflow energy in kWh
+    model.Tank_State_of_Charge         = Var(model.scenarios,model.years,  model.periods, within=NonNegativeReals)      # State of Charge of the tank in kWh
+    model.Tank_Maximum_Discharge_Power       = Var(model.steps , within=NonNegativeReals)                                     # Maximum discharge power in kW
+    model.Tank_Maximum_Charge_Power        = Var(model.steps , within=NonNegativeReals)
+   
     "Variables associated to the project"
     model.Net_Present_Cost                    = Var(within=Reals)
     model.Scenario_Net_Present_Cost           = Var(model.scenarios, 

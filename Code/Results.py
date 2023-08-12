@@ -26,12 +26,12 @@ import warnings; warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 #%% Results summary
-def ResultsSummary(instance, Optimization_Goal, TimeSeries, Brownfield_Investment):
+def ResultsSummary(instance, Optimization_Goal, TimeSeries):
 
     from Results import EnergySystemCost, EnergySystemSize, YearlyCosts, YearlyEnergyParams, YearlyEnergyParamsSC  
     
     print('Results: exporting economic results...')
-    EnergySystemCost = EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment)
+    EnergySystemCost = EnergySystemCost(instance, Optimization_Goal)
     YearlyCost       = YearlyCosts(instance) 
     print('         exporting technical results...')
     EnergySystemSize   = EnergySystemSize(instance)        
@@ -120,11 +120,18 @@ def TimeSeries(instance):
     Electric_Demand             = instance.Energy_Demand.extract_values()    
     Electricity_From_Grid       = instance.Energy_From_Grid.get_values() 
     Electricity_To_Grid         = instance.Energy_To_Grid.get_values()   
-    
+    Ice_Demand                  = instance.Ice_Demand.extract_values()
+    Compressor                  = instance.Compressor_Energy_Consumption.get_values()
     BESS_SOC                    = instance.Battery_SOC.get_values()
     LHV                         = instance.Fuel_LHV.extract_values()
     Generator_Efficiency        = instance.Generator_Efficiency.extract_values()
     FUEL_emission               = instance.FUEL_emission.get_values()
+    COP                         = instance.COP.extract_values()
+    Tank_lvl                    = instance.Tank_State_of_Charge.extract_values()
+    Tank_Outflow                = instance.Tank_Outflow.get_values()
+    Tank_Inflow                 = instance.Tank_Inflow.get_values()
+    IceProd                     = instance.Ice_Prod.extract_values()
+
     "Creating TimeSeries dictionary and exporting excel"
     TimeSeries = {}
         
@@ -145,6 +152,14 @@ def TimeSeries(instance):
             flow_header      += ['Electric Demand']
             component_header += ['']
             unit_header      += ['Wh']
+
+            
+            ICE = pd.DataFrame([Ice_Demand[(s,y,t)] for t in range(1,P+1)])
+            TimeSeries[s][y] = pd.concat([TimeSeries[s][y], ICE], axis=1)
+            scenario_header  += ['Scenario ' + str(s)]
+            flow_header      += ['Ice Demand']
+            component_header += ['']
+            unit_header      += ['kg']
             
             for r in range(1,R+1):
                 RES = pd.DataFrame([RES_Energy_Production[(s,y,r,t)] for t in range(1,P+1)])
@@ -168,11 +183,17 @@ def TimeSeries(instance):
             CURTAIL  = pd.DataFrame([Curtailment[(s,y,t)] for t in range(1,P+1)])
             EL_FROM_GRID = pd.DataFrame([Electricity_From_Grid[(s,y,t)] for t in range(1,P+1)]) 
             EL_TO_GRID = pd.DataFrame([Electricity_To_Grid[(s,y,t)] for t in range(1,P+1)])    
-            TimeSeries[s][y] = pd.concat([TimeSeries[s][y], BESS_OUT, BESS_IN, LL, CURTAIL, EL_FROM_GRID,EL_TO_GRID], axis=1) 
-            scenario_header  += ['Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s)]
-            flow_header      += ['Battery Discharge','Battery Charge','Lost Load','Curtailment','Electricity from grid','Electricity to grid'] 
-            component_header += ['','','','','','']
-            unit_header      += ['Wh','Wh','Wh','Wh','Wh','Wh']
+            COMP = pd.DataFrame([Compressor[(s,y,t)] for t in range(1,P+1)]) 
+            COP = pd.DataFrame([COP[(s,y,t)] for t in range(1,P+1)]) 
+            Tank_OUT = pd.DataFrame([Tank_Outflow[(s,y,t)] for t in range(1,P+1)])
+            Tank_IN  = pd.DataFrame([Tank_Inflow[(s,y,t)] for t in range(1,P+1)])
+            IceProd =pd.DataFrame([IceProd[(s,y,t)] for t in range(1,P+1)])
+            TimeSeries[s][y] = pd.concat([TimeSeries[s][y], BESS_OUT, BESS_IN, LL, CURTAIL, EL_FROM_GRID,EL_TO_GRID,COMP,COP,Tank_IN,Tank_OUT,IceProd], axis=1) 
+            scenario_header  += ['Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s), 'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s),'Scenario ' + str(s)]
+            flow_header      += ['Battery Discharge','Battery Charge','Lost Load','Curtailment','Electricity from grid','Electricity to grid', 'Compressor Consumption','COP','Tank Discharge','Tank Charge','Ice Production'] 
+            component_header += ['','','','','','','','','','','']
+            unit_header      += ['Wh','Wh','Wh','Wh','Wh','Wh','Wh','','kg','kg','kg']
+            
             
             SOC              = pd.DataFrame([BESS_SOC[(s,y,t)] for t in range(1,P+1)])
             TimeSeries[s][y] = pd.concat([TimeSeries[s][y], SOC], axis=1)
@@ -180,9 +201,18 @@ def TimeSeries(instance):
             flow_header      += ['Battery SOC']
             component_header += ['']
             unit_header      += ['Wh']
+            
+            Ice_mass         = pd.DataFrame ([Tank_lvl[(s,y,t)] for t in  range(1,P+1)])
+            TimeSeries[s][y] = pd.concat([TimeSeries[s][y], Ice_mass], axis=1)
+            scenario_header  += ['Scenario ' + str(s)]
+            flow_header      += ['Tank SOC']
+            component_header += ['']
+            unit_header      += ['kg']
+
+
 
             for g in range(1,G+1):
-                FUEL             = pd.DataFrame([Generator_Energy_Production[(s,y,g,t)]/LHV[g]/Generator_Efficiency[g] for t in range(1,P+1)])
+                FUEL  = pd.DataFrame([float(Generator_Energy_Production[(s,y,g,t)])/ LHV[g] /Generator_Efficiency[g] for t in range(1,P+1)])
                 TimeSeries[s][y] = pd.concat([TimeSeries[s][y], FUEL], axis=1)
                 scenario_header  += ['Scenario ' + str(s)]
                 flow_header      += ['Fuel Consumption']
@@ -201,7 +231,7 @@ def TimeSeries(instance):
             date = str(start_year+y-1)+'/'+str(start_month)+'/'+str(start_day)+' '+str(start_hour)+':'+str(start_minute)
             TimeSeries[s][y].index = pd.date_range(start=date, periods=P, freq='H')
             
-            round(TimeSeries[s][y],1).to_excel(TS_excel, sheet_name='Year ' + str(y))
+            round(TimeSeries[s][y],2).to_excel(TS_excel, sheet_name='Year ' + str(y))
 
         TS_excel.save()
     
@@ -210,7 +240,7 @@ def TimeSeries(instance):
 
     
 #%% Economic output        
-def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
+def EnergySystemCost(instance, Optimization_Goal):
     
     #%% Importing parameters
     S  = int(instance.Scenarios.extract_values()[None])
@@ -258,10 +288,7 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     RES_Inv_Specific_Cost = instance.RES_Specific_Investment_Cost.extract_values()
     RES_Investment_Cost = pd.DataFrame()
     for r in range(1,R+1):
-        if Brownfield_Investment == 1:
-            r_inv = (RES_Units[1,r]-RES_units[r])*RES_Nominal_Capacity[r]*RES_Inv_Specific_Cost[r]
-        elif Brownfield_Investment == 0:
-            r_inv = (RES_Units[1,r])*RES_Nominal_Capacity[r]*RES_Inv_Specific_Cost[r]
+        r_inv = (RES_Units[1,r])*RES_Nominal_Capacity[r]*RES_Inv_Specific_Cost[r]
         res_inv = pd.DataFrame(['Investment cost', RES_Names[r], '-', 'kUSD', r_inv/1e3]).T.set_index([0,1,2,3]) 
         if ST == 1:
             res_inv.columns = ['Total']
@@ -289,10 +316,7 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     BESS_capacity = instance.Battery_capacity.value
     BESS_Inv_Specific_Cost = instance.Battery_Specific_Investment_Cost.value
     BESS_Investment_Cost = pd.DataFrame()
-    if Brownfield_Investment == 1:
-        b_inv = (BESS_Nominal_Capacity[1]-BESS_capacity)*BESS_Inv_Specific_Cost
-    elif Brownfield_Investment == 0:
-        b_inv = (BESS_Nominal_Capacity[1])*BESS_Inv_Specific_Cost
+    b_inv = (BESS_Nominal_Capacity[1])*BESS_Inv_Specific_Cost
     bess_inv = pd.DataFrame(['Investment cost', 'Battery bank', '-', 'kUSD', b_inv/1e3]).T.set_index([0,1,2,3]) 
     if ST == 1:
         bess_inv.columns = ['Total']
@@ -315,16 +339,42 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     if ST != 1:
         BESS_Investment_Cost = pd.concat([BESS_Investment_Cost, bess_inv_tot],axis=1)
 
+
+
+    "Tank "
+    Tank_Nominal_Capacity = instance.Tank_Nominal_Capacity.get_values()
+    Tank_Inv_Specific_Cost = instance.Tank_Specific_Investment_Cost.value
+    Tank_Investment_Cost = pd.DataFrame()
+    t_inv = (Tank_Nominal_Capacity[1])*Tank_Inv_Specific_Cost
+    tank_inv = pd.DataFrame(['Investment cost', 'Ice tank', '-', 'kUSD', t_inv/1e3]).T.set_index([0,1,2,3]) 
+    if ST == 1:
+        tank_inv.columns = ['Total']
+    else:
+        tank_inv.columns = ['Step 1']
+    tank_inv.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
+    Tank_Investment_Cost = pd.concat([Tank_Investment_Cost, tank_inv], axis=1).fillna(0)
+    for (y,st) in tup_list:
+        t_inv = (Tank_Nominal_Capacity[st]-Tank_Nominal_Capacity[st-1])*Tank_Inv_Specific_Cost/((1+Discount_Rate)**(y-1))
+        tank_inv = pd.DataFrame(['Investment cost', 'Battery bank', '-', 'kUSD', t_inv/1e3]).T.set_index([0,1,2,3]) 
+        if ST == 1:
+            tank_inv.columns = ['Total']
+        else:
+            tank_inv.columns = ['Step '+str(st)]
+        tank_inv.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
+        Tank_Investment_Cost = pd.concat([Tank_Investment_Cost, tank_inv], axis=1).fillna(0)
+    Tank_Investment_Cost = Tank_Investment_Cost.groupby(level=[0], axis=1, sort=False).sum()
+    tank_inv_tot = Tank_Investment_Cost.sum(1).to_frame()
+    tank_inv_tot.columns = ['Total']
+    if ST != 1:
+        Tank_Investment_Cost = pd.concat([Tank_Investment_Cost, tank_inv_tot],axis=1)
+
     "Generator capacity"
     Generator_Capacity = instance.Generator_Nominal_Capacity.get_values()   
     Generator_Inv_Specific_Cost = instance.Generator_Specific_Investment_Cost.extract_values()
     Generator_capacity = instance.Generator_capacity.extract_values()     
     Generator_Investment_Cost = pd.DataFrame()
     for g in range(1,G+1):
-        if Brownfield_Investment == 1:
-            g_inv = (Generator_Capacity[1,g]-Generator_capacity[g])*Generator_Inv_Specific_Cost[g]
-        elif Brownfield_Investment == 0:
-            g_inv = (Generator_Capacity[1,g])*Generator_Inv_Specific_Cost[g]
+        g_inv = (Generator_Capacity[1,g])*Generator_Inv_Specific_Cost[g]
         gen_inv = pd.DataFrame(['Investment cost', Generator_Names[g], '-', 'kUSD', g_inv/1e3]).T.set_index([0,1,2,3]) 
         if ST == 1:
             gen_inv.columns = ['Total']
@@ -391,7 +441,19 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     bess_fc.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
     BESS_Fixed_Cost = pd.concat([BESS_Fixed_Cost, bess_fc], axis=1).fillna(0) 
     BESS_Fixed_Cost = BESS_Fixed_Cost.groupby(level=[0], axis=1, sort=False).sum()
-        
+
+    "Ice tank"
+    Tank_OM_Specific_Cost = instance.Tank_Specific_OM_Cost.value    
+    Tank_Fixed_Cost = pd.DataFrame()
+    b_fc = 0
+    for (y,st) in yu_tuples_list:
+        b_fc += Tank_Nominal_Capacity[st]*Tank_Inv_Specific_Cost*Tank_OM_Specific_Cost/((1+Discount_Rate)**(y))
+    tank_fc = pd.DataFrame(['Fixed cost', 'Ice tank', '-', 'kUSD', b_fc/1e3]).T.set_index([0,1,2,3]) 
+    tank_fc.columns = ['Total']
+    tank_fc.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
+    Tank_Fixed_Cost = pd.concat([Tank_Fixed_Cost, tank_fc], axis=1).fillna(0) 
+    Tank_Fixed_Cost = Tank_Fixed_Cost.groupby(level=[0], axis=1, sort=False).sum()
+
     "Generators"
     Generator_OM_Specific_Cost = instance.Generator_Specific_OM_Cost.extract_values()     
     Generator_Fixed_Cost = pd.DataFrame()
@@ -533,14 +595,27 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
     Electric_Demand = Electric_Demand.groupby(level=[1], axis=0, sort=False).sum()
     Energy_Demand = instance.Energy_Demand.extract_values()
     
+    
+    Compressor_Demand = pd.DataFrame.from_dict(instance.Compressor_Energy_Consumption.extract_values(), orient='index') #[Wh]
+    Compressor_Demand.index = pd.MultiIndex.from_tuples(list(Compressor_Demand.index))
+    Compressor_Demand = Compressor_Demand.groupby(level=[1], axis=0, sort=False).sum() 
+    Compressor_consumption = instance.Compressor_Energy_Consumption.extract_values()
+   
     LCOE_scenarios = pd.DataFrame()
     for s in range(1,S+1):
-        LC = pd.DataFrame(['Levelized Cost of Energy scenarios','System',s,'USD/kWh',(instance.Scenario_Net_Present_Cost.get_values()[s]/sum(sum(Energy_Demand[s,i,t] for t in range(1,P+1))/(1+Discount_Rate)**i for i in range(1,(Y+1))))*1e3 ]).T
+        #print(sum(sum(Energy_Demand[s,i,t] for t in range(1,P+1))+sum(Compressor_consumption[s,i,t] fpr t in range(1,P+1)))
+        LC = pd.DataFrame(['Levelized Cost of Energy scenarios','System',s,'USD/kWh',(instance.Scenario_Net_Present_Cost.get_values()[s]
+                                                                                      /
+                                                                                        sum(sum(Energy_Demand[s,i,t] for t in range(1,P+1))
+                                                                                            
+                                                                                            + sum(Compressor_consumption[s,i,t] for t in range(1,P+1))/(1+Discount_Rate)**i for i in range(1,(Y+1))))*1e3 ]).T
         LCOE_scenarios = pd.concat([LCOE_scenarios, LC], axis=0)
     LCOE_scenarios = LCOE_scenarios.set_index([0,1,2,3])
     LCOE_scenarios.columns = ['Total']
     
-    Net_Present_Demand = sum(Electric_Demand.iloc[i-1,0]/(1+Discount_Rate)**i for i in range(1,(Y+1)))    #[Wh]
+    Net_Present_Demand = sum((
+        Electric_Demand.iloc[i-1,0]+ Compressor_Demand.iloc[i-1,0])/(1+Discount_Rate)**i for i in range(1,(Y+1))) #[Wh]
+    
     LCOE = pd.DataFrame([Net_Present_Cost.iloc[0,0]/Net_Present_Demand])*1e6    #[USD/KWh]
     LCOE.index = pd.MultiIndex.from_arrays([['Levelized Cost of Energy '],['System'],['-'],['USD/kWh']])
     LCOE.index.names = ['Cost item', 'Component', 'Scenario', 'Unit']
@@ -556,10 +631,12 @@ def EnergySystemCost(instance, Optimization_Goal, Brownfield_Investment):
                             round(LCOE_scenarios.astype(float),4),
                             round(RES_Investment_Cost.astype(float),3),
                             round(BESS_Investment_Cost.astype(float),3),
+                            round(Tank_Investment_Cost.astype(float),3),
                             round(Generator_Investment_Cost.astype(float),3),
                             round(Grid_Investment_Cost.astype(float),3),
                             round(RES_Fixed_Cost.astype(float),3),
                             round(BESS_Fixed_Cost.astype(float),3),
+                            round(Tank_Fixed_Cost.astype(float),3),
                             round(Generator_Fixed_Cost.astype(float),3),
                             round(Grid_Fixed_Cost.astype(float),3),
                             round(LostLoad_Cost.astype(float),3),
@@ -664,6 +741,31 @@ def EnergySystemSize(instance):
     if ST != 1:
         BESS_Size = pd.concat([BESS_Size, bess_size_tot],axis=1)
 
+    "Ice tank"
+    Tank_Nominal_Capacity = instance.Tank_Nominal_Capacity.get_values()
+    Tank_Size = pd.DataFrame()
+    tank_size = pd.DataFrame(['Ice tank', 'kg', Tank_Nominal_Capacity[1]]).T.set_index([0,1])
+    if ST == 1:
+        tank_size.columns = ['Total']
+    else:
+        tank_size.columns = ['Step 1']
+    tank_size.index.names = ['Component', 'Unit']
+    Tank_Size = pd.concat([Tank_Size, tank_size], axis=1).fillna(0)
+    for (y,st) in tup_list:
+        tank_size = pd.DataFrame(['Ice Tank', 'kWh', (Tank_Nominal_Capacity[st]-Tank_Nominal_Capacity[st-1])]).T.set_index([0,1])   #ho tolto il /1e3
+        if ST == 1:
+            tank_size.columns = ['Total']
+        else:
+            tank_size.columns = ['Step '+str(st)]
+        tank_size.index.names = ['Component', 'Unit']
+        Tank_Size = pd.concat([Tank_Size, tank_size], axis=1).fillna(0)     
+    Tank_Size = Tank_Size.groupby(level=[0], axis=1, sort=False).sum()
+    tank_size_tot = Tank_Size.sum(1).to_frame()
+    tank_size_tot.columns = ['Total']
+    if ST != 1:
+        Tank_Size = pd.concat([Tank_Size, tank_size_tot],axis=1)
+
+
     "Generators"
     Generator_Capacity = instance.Generator_Nominal_Capacity.get_values()   
     Generator_Size = pd.DataFrame()
@@ -692,6 +794,7 @@ def EnergySystemSize(instance):
     #%% Concatenating
     SystemSize = pd.concat([round(RES_Size.astype(float),2),
                             round(BESS_Size.astype(float),2),
+                            round(Tank_Size.astype(float),3),
                             round(Generator_Size.astype(float),2)], axis=0).fillna('-')
     
     return SystemSize
@@ -756,6 +859,17 @@ def YearlyCosts(instance):
         bess_yc = pd.DataFrame(['Year '+str(y), BESS_Nominal_Capacity[st]*BESS_Inv_Specific_Cost*BESS_OM_Specific_Cost/1e3]).T.set_index([0]) 
         bess_yc.columns = pd.MultiIndex.from_arrays([['Fixed costs'],['Battery bank'],['-'],['kUSD']], names=['','Component','Scenario','Unit'])
         BESS_Yearly_Cost = pd.concat([BESS_Yearly_Cost,bess_yc], axis=0)
+        
+    "Ice tank"
+    Tank_Nominal_Capacity = instance.Tank_Nominal_Capacity.extract_values()    
+    Tank_Inv_Specific_Cost = instance.Tank_Specific_Investment_Cost.value
+    Tank_OM_Specific_Cost = instance.Tank_Specific_OM_Cost.value
+    Tank_Yearly_Cost = pd.DataFrame()
+    for (y,st) in ys_tuples_list:
+        tank_yc = pd.DataFrame(['Year '+str(y), Tank_Nominal_Capacity[st]*Tank_Inv_Specific_Cost*Tank_OM_Specific_Cost/1e3]).T.set_index([0]) 
+        tank_yc.columns = pd.MultiIndex.from_arrays([['Fixed costs'],['Ice tank'],['-'],['kUSD']], names=['','Component','Scenario','Unit'])
+        Tank_Yearly_Cost = pd.concat([Tank_Yearly_Cost,tank_yc], axis=0)
+
 
     "Generator sources"
     Generator_Types = instance.Generator_Types.value
@@ -864,6 +978,7 @@ def YearlyCosts(instance):
     #%% Concatenating
     YearlyCost = pd.concat([round(RES_Yearly_Cost.astype(float),2),
                             round(BESS_Yearly_Cost.astype(float),2),
+                            round(Tank_Yearly_Cost.astype(float),2),
                             round(Generator_Yearly_Cost.astype(float),2),
                             round(Grid_Yearly_Fixed_Cost.astype(float),2), 
                             round(Lost_Load_Yearly_Cost.astype(float),2),
@@ -906,22 +1021,25 @@ def YearlyEnergyParams(instance, TimeSeries):
         battery_out = 0
         grid_in = 0   
         grid_out = 0
+        battery_in = 0
         for s in range(1,S+1):
             curtailment += TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Curtailment',:,:]].sum().sum()*instance.Scenario_Weight.extract_values()[s]
             renewables  += TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'RES Production',:,:]].sum().sum()*instance.Scenario_Weight.extract_values()[s]
             generators  += TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Generator Production',:,:]].sum().sum()*instance.Scenario_Weight.extract_values()[s]
             battery_out += TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Battery Discharge',:,:]].sum().sum()*instance.Scenario_Weight.extract_values()[s]
+            battery_in += TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Battery Charge',:,:]].sum().sum()*instance.Scenario_Weight.extract_values()[s]         
             grid_in += TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Electricity from grid',:,:]].sum().sum()*instance.Scenario_Weight.extract_values()[s]   
             grid_out += TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Electricity to grid',:,:]].sum().sum()*instance.Scenario_Weight.extract_values()[s]
-        demand = TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Electric Demand',:,:]].sum().sum()
+            demand = TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Electric Demand',:,:]].sum().sum()
+            ice = TimeSeries[s][y].loc[:,idx['Scenario '+str(s),'Compressor Consumption',:,:]].sum().sum()
         
-        gen_load  = pd.concat([gen_load, pd.DataFrame(['Year '+str(y), generators/demand]).T.set_index([0])], axis=0)
-        res_load  = pd.concat([res_load, pd.DataFrame(['Year '+str(y), (renewables-curtailment)/demand]).T.set_index([0])], axis=0)
+        gen_load  = pd.concat([gen_load, pd.DataFrame(['Year '+str(y), generators/(demand+ice)]).T.set_index([0])], axis=0)
+        res_load  = pd.concat([res_load, pd.DataFrame(['Year '+str(y), (renewables-curtailment)/(demand+ice)]).T.set_index([0])], axis=0)
         curt_load = pd.concat([curt_load, pd.DataFrame(['Year '+str(y), curtailment/(generators+renewables)]).T.set_index([0])], axis=0)
-        grid_usage = pd.concat([grid_usage, pd.DataFrame(['Year '+str(y), grid_in/demand]).T.set_index([0])], axis=0)    
+        grid_usage = pd.concat([grid_usage, pd.DataFrame(['Year '+str(y), grid_in/(ice + demand)]).T.set_index([0])], axis=0)    
         res_pen   = pd.concat([res_pen, pd.DataFrame(['Year '+str(y), renewables/(renewables+generators+grid_in)]).T.set_index([0])], axis=0)
 
-        battery_usage = pd.concat([battery_usage, pd.DataFrame(['Year '+str(y), battery_out/demand]).T.set_index([0])], axis=0)
+        battery_usage = pd.concat([battery_usage, pd.DataFrame(['Year '+str(y), battery_out/(demand+ice)]).T.set_index([0])], axis=0)
 
 
     gen_load  = round(gen_load.astype(float)*100,2)
@@ -933,12 +1051,14 @@ def YearlyEnergyParams(instance, TimeSeries):
 
     gen_load.columns  = pd.MultiIndex.from_arrays([['Generators share'],['%']], names=['',' '])
     curt_load.columns = pd.MultiIndex.from_arrays([['Curtailment share'],['%']], names=['',' '])
+    res_load.columns   = pd.MultiIndex.from_arrays([['Renewables share'],['%']], names=['',' '])
     res_pen.columns   = pd.MultiIndex.from_arrays([['Renewables penetration'],['%']], names=['',' '])
     battery_usage.columns = pd.MultiIndex.from_arrays([['Battery usage'],['%']], names=['',' '])
     grid_usage.columns = pd.MultiIndex.from_arrays([['Grid usage'],['%']], names=['',' ']) 
     
     #%% Concatenating
     YearlyEnergyParams = pd.concat([gen_load,
+                                    res_load,
                                     res_pen,
                                     curt_load,
                                     battery_usage,
@@ -983,15 +1103,18 @@ def YearlyEnergyParamsSC(instance, TimeSeries):
 #%% Data preparation
     Generator_Names = instance.Generator_Names.extract_values()
     Generator_Energy_Production = instance.Generator_Energy_Production.get_values()
-    Energy_Demand = instance.Energy_Demand.extract_values()
+    Energy_Demand    = instance.Energy_Demand.extract_values()
+    Ice_Power       = instance.Compressor_Energy_Consumption.extract_values()
     Generator_Types = instance.Generator_Types.value
-    gen_load_sc  = pd.DataFrame()
+    Ice_Demand      = instance.Ice_Demand.extract_values()
+    gen_load_sc     = pd.DataFrame()
     for s in range(1,S+1):
         gen_load = pd.DataFrame()
         for g in range(1,Generator_Types+1):
             gen_load_types = pd.DataFrame()
             for (y,st) in ys_tuples_list:
-                gen_load_scenarios = pd.DataFrame(['Year '+str(y), sum(Generator_Energy_Production[(s,y,g,t)] for t in range(1,P+1))/sum(Energy_Demand[s,y,t] for t in range(1,P+1))]).T.set_index([0])
+                Demand_tot=sum(Ice_Power[s,y,t] for t in range(1,P+1))+sum(Energy_Demand[s,y,t] for t in range(1,P+1))
+                gen_load_scenarios = pd.DataFrame(['Year '+str(y), sum(Generator_Energy_Production[(s,y,g,t)] for t in range(1,P+1))/Demand_tot ]).T.set_index([0])
                 gen_load_scenarios.columns  = pd.MultiIndex.from_arrays([['Generator share'],[Generator_Names[g]],[s],['%']], names=['','Component','Scenario',' ']) 
                 gen_load_types = pd.concat([gen_load_types, gen_load_scenarios], axis=0)
             gen_load = pd.concat([gen_load, gen_load_types], axis=0)
@@ -1009,7 +1132,7 @@ def YearlyEnergyParamsSC(instance, TimeSeries):
         for r in range(1,RES_Sources+1):
             res_load_types = pd.DataFrame()
             for (y,st) in ys_tuples_list:
-                res_load_scenarios = pd.DataFrame(['Year '+str(y), sum(RES_Energy_Production[(s,y,r,t)]-Curtailment[(s,y,t)] for t in range(1,P+1))/sum(Energy_Demand[s,y,t] for t in range(1,P+1))]).T.set_index([0])
+                res_load_scenarios = pd.DataFrame(['Year '+str(y), sum(RES_Energy_Production[(s,y,r,t)]-Curtailment[(s,y,t)] for t in range(1,P+1))/Demand_tot]).T.set_index([0])
                 res_load_scenarios.columns  = pd.MultiIndex.from_arrays([['RES load'],[RES_Names[r]],[s],['%']], names=['','Component','Scenario',' ']) 
                 res_load_types = pd.concat([res_load_types, res_load_scenarios], axis=0)
             res_load = pd.concat([res_load, res_load_types], axis=0)
@@ -1047,10 +1170,20 @@ def YearlyEnergyParamsSC(instance, TimeSeries):
     for s in range(1,S+1):
         battery_sc = pd.DataFrame()
         for (y,st) in ys_tuples_list:
-            batt_sc = pd.DataFrame(['Year '+str(y), sum(BESS_Outflow[s,y,t] for t in range(1,P+1))/sum(Energy_Demand[s,y,t] for t in range(1,P+1))]).T.set_index([0]) 
+            batt_sc = pd.DataFrame(['Year '+str(y), sum(BESS_Outflow[s,y,t] for t in range(1,P+1))/Demand_tot]).T.set_index([0]) 
             batt_sc.columns  = pd.MultiIndex.from_arrays([['Battery usage'],['Battery bank'],[s],['%']], names=['','Component','Scenario',' '])
             battery_sc = pd.concat([battery_sc, batt_sc], axis=0)
         battery_usage_sc = pd.concat([battery_usage_sc, battery_sc], axis=1).fillna(0)
+
+    Tank_Outflow = instance.Tank_Outflow.get_values()    
+    Tank_usage_sc = pd.DataFrame()
+    for s in range(1,S+1):
+        Tank_sc = pd.DataFrame()
+        for (y,st) in ys_tuples_list:
+            T_sc = pd.DataFrame(['Year '+ str(y), sum(Tank_Outflow[s,y,t] for t in range(1,P+1))/(sum(Ice_Demand[s,y,t] for t in range(1,P+1)))]).T.set_index([0]) 
+            T_sc.columns  = pd.MultiIndex.from_arrays([['Tank usage'],['Ice tank'],[s],['%']], names=['','Component','Scenario',' '])
+            Tank_sc = pd.concat([Tank_sc, T_sc], axis=0)
+        Tank_usage_sc = pd.concat([Tank_usage_sc, Tank_sc], axis=1).fillna(0)
 
     Electricity_From_Grid = instance.Energy_From_Grid.get_values() 
     grid_usage_sc = pd.DataFrame()
@@ -1067,6 +1200,7 @@ def YearlyEnergyParamsSC(instance, TimeSeries):
                                       round(res_pen_sc.astype(float)*100,2),
                                       round(curt_load_sc.astype(float)*100,2),
                                       round(battery_usage_sc.astype(float)*100,2),
+                                      round(Tank_usage_sc.astype(float)*100,2),
                                       round(grid_usage_sc.astype(float)*100,2)], axis=1)
     
     return YearlyEnergyParamsSC, res_pen_sc       
