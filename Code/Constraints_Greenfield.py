@@ -14,7 +14,8 @@ Based on the original model by:
     Sergio Balderrama  - Department of Mechanical and Aerospace Engineering, University of Liège / San Simon University, Centro Universitario de Investigacion en Energia
     Sylvain Quoilin    - Department of Mechanical Engineering Technology, KU Leuven
 """
-
+from datetime import time
+import math
 
 #%% Economic constraints
 
@@ -78,8 +79,11 @@ def Investment_Cost(model):
     Inv_Bat = ((model.Battery_Nominal_Capacity[1]*model.Battery_Specific_Investment_Cost)
                     + sum((((model.Battery_Nominal_Capacity[ut] - model.Battery_Nominal_Capacity[ut-1])*model.Battery_Specific_Investment_Cost))/((1+model.Discount_Rate)**(yt-1))
                     for (yt,ut) in tup_list)) 
+    Inv_Tank = ((model.Tank_Nominal_Capacity[1]*model.Tank_Specific_Investment_Cost)
+                    + sum((((model.Tank_Nominal_Capacity[ut] - model.Tank_Nominal_Capacity[ut-1])*model.Tank_Specific_Investment_Cost))/((1+model.Discount_Rate)**(yt-1))
+                    for (yt,ut) in tup_list)) 
     
-    return model.Investment_Cost == Inv_Ren + Inv_Gen + Inv_Bat    
+    return model.Investment_Cost == Inv_Ren + Inv_Gen + Inv_Bat + Inv_Tank  
 
 def Investment_Cost_Limit(model):
     return model.Investment_Cost <= model.Investment_Cost_Limit
@@ -93,7 +97,9 @@ def Operation_Maintenance_Cost_Act(model):
                     1+model.Discount_Rate)**yt)for (yt,ut) in model.years_steps)for g in model.generator_types)
     OyM_Bat = sum((model.Battery_Nominal_Capacity[ut]*model.Battery_Specific_Investment_Cost*model.Battery_Specific_OM_Cost)/((
                     1+model.Discount_Rate)**yt)for (yt,ut) in model.years_steps)
-    return model.Operation_Maintenance_Cost_Act == OyM_Ren + OyM_Gen + OyM_Bat 
+    OyM_Tank =sum((model.Tank_Nominal_Capacity[ut]*model.Tank_Specific_Investment_Cost*model.Tank_Specific_OM_Cost)/((
+                    1+model.Discount_Rate)**yt)for (yt,ut) in model.years_steps)
+    return model.Operation_Maintenance_Cost_Act == OyM_Ren + OyM_Gen + OyM_Bat + OyM_Tank 
 
 
 def Operation_Maintenance_Cost_NonAct(model):
@@ -103,7 +109,9 @@ def Operation_Maintenance_Cost_NonAct(model):
                     for (yt,ut) in model.years_steps)for g in model.generator_types)
     OyM_Bat = sum((model.Battery_Nominal_Capacity[ut]*model.Battery_Specific_Investment_Cost*model.Battery_Specific_OM_Cost)
                     for (yt,ut) in model.years_steps)
-    return model.Operation_Maintenance_Cost_NonAct == OyM_Ren + OyM_Gen + OyM_Bat 
+    OyM_Tank = sum((model.Tank_Nominal_Capacity[ut]*model.Tank_Specific_Investment_Cost*model.Tank_Specific_OM_Cost)
+                    for (yt,ut) in model.years_steps)
+    return model.Operation_Maintenance_Cost_NonAct == OyM_Ren + OyM_Gen + OyM_Bat + OyM_Tank
 
 
 "Variable costs"
@@ -280,17 +288,71 @@ def Energy_balance(model,s,yt,ut,t): # Energy balance
     Total_Generator_Energy = sum(model.Generator_Energy_Production[i] for i in foo)
     En_From_Grid = model.Energy_From_Grid[s,yt,t]*model.Grid_Availability[s,yt,t]
     En_To_Grid = model.Energy_To_Grid[s,yt,t]*model.Grid_Availability[s,yt,t]
-    return model.Energy_Demand[s,yt,t] == (Total_Renewable_Energy 
+    return model.Energy_Demand[s,yt,t]+ model.Compressor_Energy_Consumption[s,yt,t] == (Total_Renewable_Energy 
                                            + Total_Generator_Energy
                                            + En_From_Grid
                                            - En_To_Grid 
                                            + model.Battery_Outflow[s,yt,t]
                                            - model.Battery_Inflow[s,yt,t] 
                                            + model.Lost_Load[s,yt,t]  
-                                           - model.Energy_Curtailment[s,yt,t] )     
+                                           - model.Energy_Curtailment[s,yt,t])     
 
+#%% Ice mass balance
+#%% T ground water
 
-"Renewable Energy Sources constraints"
+def Ice_balance(model,s,yt,ut,t):
+    return model.Ice_Demand[s,yt,t]==model.Ice_Prod[s,yt,t] - model.Tank_Inflow[s,yt,t] + model.Tank_Outflow[s,yt,t]
+
+def Ice_Prod(model,s,yt,ut,t):
+    return model.Ice_Prod[s,yt,t] ==(model.COP[s,yt,t] *model.Compressor_Energy_Consumption[s,yt,t])/((model.eta_c*(((4186*(model.Tgw[t]-0)+334000+(0-(-10))*2090)))))
+
+def Maximum_Consumption(model,s,yt,ut,t):
+    return model.Compressor_Energy_Consumption[s,yt,t] <= model.Compressor_Nominal_Power[s]
+
+def Tot_Ice_Prod(model,s,yt,ut,t):
+    return model.Tot_Ice_Prod[s,yt,t]== sum(model.Ice_Prod[s,yt,t] for t in model.periods )
+#%% 
+
+" Ice Tank constraints  "
+def Tank_State_of_Charge(model,s,yt,ut,t): # State of Charge of the battery
+    if t==1 and yt==1: # The state of charge (State_Of_Charge) for the period 0 is equal to the Tank size.
+        return model.Tank_State_of_Charge[s,yt,t] == model.Tank_Nominal_Capacity[ut]*model.Tank_Initial_SOC - model.Tank_Outflow[s,yt,t]+ model.Tank_Inflow[s,yt,t] 
+    if t==1 and yt!=1:
+        return model.Tank_State_of_Charge[s,yt,t] == model.Tank_State_of_Charge[s,yt-1,model.Periods]*model.Tank_Efficiency[s,yt,t] - model.Tank_Outflow[s,yt,t] + model.Tank_Inflow[s,yt,t]
+    else:  
+        return model.Tank_State_of_Charge[s,yt,t] == model.Tank_State_of_Charge[s,yt,t-1]*model.Tank_Efficiency[s,yt,t] - model.Tank_Outflow[s,yt,t] + model.Tank_Inflow[s,yt,t]
+
+def Maximum_Tank_Charge(model,s,yt,ut,t): 
+    return model.Tank_State_of_Charge[s,yt,t] <= model.Tank_Nominal_Capacity[ut]
+
+def Minimum_Tank_Charge(model,s,yt,ut,t):  
+    return model.Tank_State_of_Charge[s,yt,t] >= model.Tank_Nominal_Capacity[ut]*model.Tank_Depth_of_Discharge
+
+def Max_Power_Tank_Charge(model,ut): 
+    return model.Tank_Maximum_Charge_Power[ut] == model.Tank_Nominal_Capacity[ut]/model.Tank_Maximum_Charge_Time
+
+def Max_Power_Tank_Discharge(model,ut):
+    return model.Tank_Maximum_Discharge_Power[ut] == model.Tank_Nominal_Capacity[ut]/model.Tank_Maximum_Discharge_Time
+
+def Max_Tank_in(model,s,yt,ut,t): # Minimun flow of ice for the charge fase
+    return model.Tank_Inflow[s,yt,t] <= model.Tank_Maximum_Charge_Power[ut]*model.Delta_Time
+
+def Max_Tank_out(model,s,yt,ut,t): # Minimum flow of ice for the discharge fase
+    return model.Tank_Outflow[s,yt,t] <= model.Tank_Maximum_Discharge_Power[ut]*model.Delta_Time
+    
+def Tank_Min_Capacity(model,ut):    
+    return   model.Tank_Nominal_Capacity[ut] >= model.Tank_Min_Capacity[ut]
+
+def Tank_Min_Step_Capacity(model,yt,ut):    
+    if ut > 1:
+        return model.Tank_Nominal_Capacity[ut] >= model.Tank_Nominal_Capacity[ut-1]
+    elif ut == 1:
+        return model.Tank_Nominal_Capacity[ut] == model.Tank_Nominal_Capacity[ut]
+    
+
+#%%
+                                  
+"Renewables contraints"
 def Renewable_Energy(model,s,yt,ut,r,t): # Energy output of the RES
     return model.RES_Energy_Production[s,yt,r,t] == model.RES_Unit_Energy_Production[s,r,t]*model.RES_Inverter_Efficiency[r]*model.RES_Units[ut,r]
 
@@ -339,7 +401,7 @@ def Renewables_Min_Step_Units(model,yt,ut,r):
         return model.RES_Units[ut,r] == model.RES_Units[ut,r]
 
 
-"Battery Energy Storage constraints"
+'Battery Energy Storage constraint'
 def State_of_Charge(model,s,yt,ut,t): # State of Charge of the battery
     if t==1 and yt==1: # The state of charge (State_Of_Charge) for the period 0 is equal to the Battery size.
         return model.Battery_SOC[s,yt,t] == model.Battery_Nominal_Capacity[ut]*model.Battery_Initial_SOC - model.Battery_Outflow[s,yt,t]/model.Battery_Discharge_Battery_Efficiency + model.Battery_Inflow[s,yt,t]*model.Battery_Charge_Battery_Efficiency
@@ -374,7 +436,8 @@ def Battery_Min_Step_Capacity(model,yt,ut):
         return model.Battery_Nominal_Capacity[ut] >= model.Battery_Nominal_Capacity[ut-1]
     elif ut == 1:
         return model.Battery_Nominal_Capacity[ut] == model.Battery_Nominal_Capacity[ut]
-    
+
+   
 
 "Diesel generator constraints"
 def Maximun_Generator_Energy(model,s,yt,ut,g,t): 
